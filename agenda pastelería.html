@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Pastelería - Agenda Supabase</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .connection-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .status-connected {
+            background: #27ae60;
+        }
+
+        .status-disconnected {
+            background: #e74c3c;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn.active {
+            background: white;
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(255,255,255,0.3);
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .image-upload {
+            border: 3px dashed #ccc;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+
+        .image-upload:hover {
+            border-color: #667eea;
+            background: #f0f0f0;
+        }
+
+        .image-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .image-preview-item {
+            position: relative;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            padding-left: 40px;
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .pedido-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #667eea;
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pedido-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .pedido-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pedido-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .pedido-date {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .pedido-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .pedido-info div {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pendiente { background: #f39c12; color: white; }
+        .status-proceso { background: #3498db; color: white; }
+        .status-listo { background: #9b59b6; color: white; }
+        .status-entregado { background: #27ae60; color: white; }
+        .status-cancelado { background: #e74c3c; color: white; }
+
+        .pedido-images {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        .pedido-images img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .pedido-images img:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .pedido-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .pedido-actions button {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .calendar-header {
+            text-align: center;
+            font-weight: 700;
+            color: #667eea;
+            padding: 10px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .calendar-day {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 10px;
+            min-height: 100px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .calendar-day:hover {
+            border-color: #667eea;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        .calendar-day.today {
+            background: #667eea;
+            color: white;
+        }
+
+        .calendar-day-number {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .calendar-event {
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-bottom: 3px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .calendar-event:hover {
+            background: rgba(102, 126, 234, 1);
+        }
+
+        .calendar-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .month-year {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .image-modal img {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .sync-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .sync-indicator.show {
+            display: flex;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .calendar {
+                gap: 5px;
+            }
+            
+            .calendar-day {
+                min-height: 60px;
+                padding: 5px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .pedido-header {
+                flex-direction: column;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s;
+            z-index: 2000;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+
+        .config-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .config-panel input {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧁 Mi Pastelería</h1>
+            <p>Sistema de Gestión de Pedidos - Supabase</p>
+            <div id="connectionStatus" class="connection-status status-disconnected">
+                ● Desconectado
+            </div>
+        </header>
+
+        <!-- Configuración inicial -->
+        <div id="configSection" class="card">
+            <h2 style="margin-bottom: 20px; color: #2c3e50;">Configuración de Supabase</h2>
+            <p style="margin-bottom: 15px; color: #666;">Ingresa tus credenciales de Supabase (solo la primera vez):</p>
+            
+            <div class="form-group">
+                <label>Supabase URL</label>
+                <input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co">
+            </div>
+            
+            <div class="form-group">
+                <label>Supabase Anon Key</label>
+                <input type="text" id="supabaseKey" placeholder="eyJ...">
+            </div>
+            
+            <button class="btn btn-primary" onclick="app.saveConfig()" style="width: 100%;">
+                Conectar
+            </button>
+        </div>
+
+        <div id="appContent" style="display: none;">
+            <div class="nav-tabs">
+                <button class="nav-btn active" onclick="app.showSection('nuevo', this)">➕ Nuevo Pedido</button>
+                <button class="nav-btn" onclick="app.showSection('lista', this)">📋 Lista de Pedidos</button>
+                <button class="nav-btn" onclick="app.showSection('calendario', this)">📅 Calendario</button>
+                <button class="nav-btn" onclick="app.showSection('config', this)">⚙️ Config</button>
+            </div>
+
+            <!-- Sección Nuevo Pedido -->
+            <div id="nuevo" class="section active">
+                <div class="card">
+                    <h2 style="margin-bottom: 25px; color: #2c3e50;">Registrar Nuevo Pedido</h2>
+                    
+                    <form id="pedidoForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cliente">Nombre del Cliente *</label>
+                                <input type="text" id="cliente" required placeholder="Ej: María García">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="telefono">Teléfono *</label>
+                                <input type="tel" id="telefono" required placeholder="Ej: 555-123-4567">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tipoProducto">Tipo de Producto *</label>
+                                <input type="text" id="tipoProducto" required placeholder="Ej: Pastel de bodas, cupcakes...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="fechaEntrega">Fecha de Entrega *</label>
+                                <input type="date" id="fechaEntrega" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="horaEntrega">Hora de Entrega</label>
+                                <input type="time" id="horaEntrega">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="precio">Precio Total ($)</label>
+                                <input type="number" id="precio" step="0.01" placeholder="Ej: 1500.00">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="anticipo">Anticipo/Seña ($)</label>
+                                <input type="number" id="anticipo" step="0.01" placeholder="Ej: 500.00">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="estado">Estado del Pedido</label>
+                                <select id="estado">
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="proceso">En Proceso</option>
+                                    <option value="listo">Listo</option>
+                                    <option value="entregado">Entregado</option>
+                                    <option value="cancelado">Cancelado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="direccion">Dirección de Entrega</label>
+                            <input type="text" id="direccion" placeholder="Ej: Calle Principal #123, Colonia Centro">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="descripcion">Descripción Detallada *</label>
+                            <textarea id="descripcion" required placeholder="Describe el pedido: sabores, colores, tamaño, decoración..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notas">Notas Adicionales</label>
+                            <textarea id="notas" placeholder="Alergias, preferencias especiales..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Imágenes de Referencia</label>
+                            <div class="image-upload" onclick="document.getElementById('imagenes').click()">
+                                <div style="font-size: 3rem; margin-bottom: 10px;">📷</div>
+                                <div>Haz clic para subir imágenes</div>
+                                <div style="font-size: 0.9rem; color: #666; margin-top: 5px;">Se subirán a la nube automáticamente</div>
+                            </div>
+                            <input type="file" id="imagenes" multiple accept="image/*" style="display: none;" onchange="app.previewImages(this)">
+                            <div class="image-preview" id="imagePreview"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;" id="submitBtn">
+                            💾 Guardar Pedido
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sección Lista de Pedidos -->
+            <div id="lista" class="section">
+                <div class="stats" id="statsContainer"></div>
+                
+                <div class="card">
+                    <div class="filters">
+                        <div class="search-box">
+                            <input type="text" id="searchInput" placeholder="Buscar por cliente o producto..." onkeyup="app.filterPedidos()">
+                        </div>
+                        <select id="filterEstado" onchange="app.filterPedidos()" style="width: auto; min-width: 150px;">
+                            <option value="">Todos los estados</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="proceso">En Proceso</option>
+                            <option value="listo">Listo</option>
+                            <option value="entregado">Entregado</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                        <input type="date" id="filterFecha" onchange="app.filterPedidos()" style="width: auto;">
+                        <button class="btn btn-secondary" onclick="app.clearFilters()">Limpiar</button>
+                        <button class="btn btn-primary" onclick="app.loadPedidos()">🔄 Actualizar</button>
+                    </div>
+
+                    <div id="pedidosList">
+                        <div class="empty-state">
+                            <div class="loading"></div>
+                            <p>Cargando pedidos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección Calendario -->
+            <div id="calendario" class="section">
+                <div class="card">
+                    <div class="calendar-controls">
+                        <button class="btn btn-secondary" onclick="app.changeMonth(-1)">◀ Anterior</button>
+                        <div class="month-year" id="monthYear"></div>
+                        <button class="btn btn-secondary" onclick="app.changeMonth(1)">Siguiente ▶</button>
+                    </div>
+                    <div class="calendar" id="calendar"></div>
+                </div>
+            </div>
+
+            <!-- Sección Configuración -->
+            <div id="config" class="section">
+                <div class="card">
+                    <h2 style="margin-bottom: 20px; color: #2c3e50;">Configuración</h2>
+                    
+                    <div class="config-panel">
+                        <h3 style="margin-bottom: 15px;">Conexión Supabase</h3>
+                        <p><strong>URL:</strong> <span id="configUrl"></span></p>
+                        <button class="btn btn-danger" onclick="app.clearConfig()" style="margin-top: 10px;">
+                            Cambiar Credenciales
+                        </button>
+                    </div>
+
+                    <div class="config-panel">
+                        <h3 style="margin-bottom: 15px;">Datos</h3>
+                        <button class="btn btn-secondary" onclick="app.exportData()">📥 Exportar Datos (JSON)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver detalles -->
+    <div id="modal" class="modal" onclick="app.closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="app.closeModal()">×</button>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Modal para imagen grande -->
+    <div id="imageModal" class="modal image-modal" onclick="app.closeImageModal()">
+        <div class="modal-content" style="max-width: 90%; background: transparent;" onclick="event.stopPropagation()">
+            <button class="modal-close" style="background: white;" onclick="app.closeImageModal()">×</button>
+            <img id="modalImage" src="" alt="Imagen ampliada">
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+    <div id="syncIndicator" class="sync-indicator">
+        <span>🔄</span> Sincronizando...
+    </div>
+
+    <script>
+        // Objeto global de la aplicación para evitar conflictos de nombres
+        const app = {
+            supabaseClient: null,
+            pedidos: [],
+            currentMonth: new Date(),
+            editingId: null,
+            tempImages: [],
+            isOnline: false,
+
+            // Inicialización
+            init: function() {
+                const savedUrl = localStorage.getItem('supabaseUrl');
+                const savedKey = localStorage.getItem('supabaseKey');
+                
+                if (savedUrl && savedKey) {
+                    this.initSupabase(savedUrl, savedKey);
+                } else {
+                    document.getElementById('configSection').style.display = 'block';
+                }
+                
+                // Establecer fecha mínima como hoy
+                document.getElementById('fechaEntrega').min = new Date().toISOString().split('T')[0];
+                
+                // Configurar evento del formulario
+                document.getElementById('pedidoForm').addEventListener('submit', (e) => this.savePedido(e));
+            },
+
+            // Guardar configuración
+            saveConfig: function() {
+                const url = document.getElementById('supabaseUrl').value.trim();
+                const key = document.getElementById('supabaseKey').value.trim();
+                
+                if (!url || !key) {
+                    this.showNotification('Por favor ingresa ambos valores', 'error');
+                    return;
+                }
+                
+                localStorage.setItem('supabaseUrl', url);
+                localStorage.setItem('supabaseKey', key);
+                
+                this.initSupabase(url, key);
+            },
+
+            // Inicializar Supabase
+            initSupabase: function(url, key) {
+                try {
+                    // Usar la función createClient del script cargado
+                    this.supabaseClient = supabase.createClient(url, key);
+                    
+                    document.getElementById('configSection').style.display = 'none';
+                    document.getElementById('appContent').style.display = 'block';
+                    document.getElementById('configUrl').textContent = url;
+                    
+                    this.updateConnectionStatus(true);
+                    this.loadPedidos();
+                    
+                    // Suscribirse a cambios en tiempo real
+                    this.supabaseClient
+                        .channel('pedidos')
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
+                            this.showSyncIndicator();
+                            this.loadPedidos();
+                        })
+                        .subscribe();
+                    
+                    this.showNotification('Conectado a Supabase correctamente');
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.showNotification('Error al conectar: ' + error.message, 'error');
+                    document.getElementById('configSection').style.display = 'block';
+                }
+            },
+
+            // Actualizar estado de conexión
+            updateConnectionStatus: function(connected) {
+                this.isOnline = connected;
+                const status = document.getElementById('connectionStatus');
+                if (connected) {
+                    status.className = 'connection-status status-connected';
+                    status.textContent = '● Conectado';
+                } else {
+                    status.className = 'connection-status status-disconnected';
+                    status.textContent = '● Desconectado';
+                }
+            },
+
+            // Limpiar configuración
+            clearConfig: function() {
+                if (confirm('¿Seguro que quieres cambiar las credenciales?')) {
+                    localStorage.removeItem('supabaseUrl');
+                    localStorage.removeItem('supabaseKey');
+                    location.reload();
+                }
+            },
+
+            // Cargar pedidos desde Supabase
+            loadPedidos: async function() {
+                try {
+                    const { data, error } = await this.supabaseClient
+                        .from('pedidos')
+                        .select('*')
+                        .order('fecha_entrega', { ascending: true });
+                    
+                    if (error) throw error;
+                    
+                    this.pedidos = data || [];
+                    this.renderPedidos();
+                    this.renderCalendar();
+                    this.updateStats();
+                } catch (error) {
+                    console.error('Error cargando pedidos:', error);
+                    this.showNotification('Error al cargar pedidos', 'error');
+                }
+            },
+
+            // Navegación entre secciones
+            showSection: function(section, btn) {
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                
+                document.getElementById(section).classList.add('active');
+                if (btn) btn.classList.add('active');
+                
+                if (section === 'lista') {
+                    this.loadPedidos();
+                } else if (section === 'calendario') {
+                    this.renderCalendar();
+                }
+            },
+
+            // Preview de imágenes
+            previewImages: function(input) {
+                const preview = document.getElementById('imagePreview');
+                
+                if (input.files && input.files.length > 0) {
+                    Array.from(input.files).forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.tempImages.push({
+                                file: file,
+                                preview: e.target.result
+                            });
+                            
+                            const div = document.createElement('div');
+                            div.className = 'image-preview-item';
+                            div.innerHTML = `
+                                <img src="${e.target.result}" onclick="app.showImageModal('${e.target.result}')">
+                                <button type="button" class="remove-image" onclick="app.removeTempImage(this)">×</button>
+                            `;
+                            preview.appendChild(div);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                }
+            },
+
+            // Remover imagen temporal
+            removeTempImage: function(btn) {
+                const index = Array.from(btn.parentElement.parentElement.children).indexOf(btn.parentElement);
+                this.tempImages.splice(index, 1);
+                btn.parentElement.remove();
+            },
+
+            // Subir imágenes a Supabase Storage
+            uploadImages: async function() {
+                const uploadedUrls = [];
+                
+                for (const img of this.tempImages) {
+                    if (img.file) {
+                        const fileName = `${Date.now()}_${img.file.name}`;
+                        const { data, error } = await this.supabaseClient
+                            .storage
+                            .from('imagenes-pedidos')
+                            .upload(fileName, img.file);
+                        
+                        if (error) {
+                            console.error('Error subiendo imagen:', error);
+                            continue;
+                        }
+                        
+                        const { data: { publicUrl } } = this.supabaseClient
+                            .storage
+                            .from('imagenes-pedidos')
+                            .getPublicUrl(fileName);
+                        
+                        uploadedUrls.push(publicUrl);
+                    }
+                }
+                
+                return uploadedUrls;
+            },
+
+            // Guardar pedido
+            savePedido: async function(e) {
+                e.preventDefault();
+                
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="loading"></span> Guardando...';
+                
+                try {
+                    // Subir imágenes primero
+                    const imageUrls = await this.uploadImages();
+                    
+                    // Si estamos editando, mantener las imágenes anteriores
+                    let finalImages = imageUrls;
+                    if (this.editingId) {
+                        const existing = this.pedidos.find(p => p.id === this.editingId);
+                        if (existing && existing.imagenes) {
+                            finalImages = [...existing.imagenes, ...imageUrls];
+                        }
+                    }
+                    
+                    const pedidoData = {
+                        cliente: document.getElementById('cliente').value,
+                        telefono: document.getElementById('telefono').value,
+                        tipo_producto: document.getElementById('tipoProducto').value,
+                        fecha_entrega: document.getElementById('fechaEntrega').value,
+                        hora_entrega: document.getElementById('horaEntrega').value || null,
+                        precio: parseFloat(document.getElementById('precio').value) || 0,
+                        anticipo: parseFloat(document.getElementById('anticipo').value) || 0,
+                        estado: document.getElementById('estado').value,
+                        direccion: document.getElementById('direccion').value || null,
+                        descripcion: document.getElementById('descripcion').value,
+                        notas: document.getElementById('notas').value || null,
+                        imagenes: finalImages
+                    };
+                    
+                    let result;
+                    if (this.editingId) {
+                        result = await this.supabaseClient
+                            .from('pedidos')
+                            .update(pedidoData)
+                            .eq('id', this.editingId);
+                    } else {
+                        result = await this.supabaseClient
+                            .from('pedidos')
+                            .insert([pedidoData]);
+                    }
+                    
+                    if (result.error) throw result.error;
+                    
+                    this.showNotification(this.editingId ? 'Pedido actualizado' : 'Pedido guardado');
+                    
+                    // Limpiar formulario
+                    e.target.reset();
+                    document.getElementById('imagePreview').innerHTML = '';
+                    this.tempImages = [];
+                    this.editingId = null;
+                    
+                    // Recargar datos
+                    await this.loadPedidos();
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.showNotification('Error al guardar: ' + error.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '💾 Guardar Pedido';
+                }
+            },
+
+            // Renderizar lista de pedidos
+            renderPedidos: function(pedidosToRender = this.pedidos) {
+                const container = document.getElementById('pedidosList');
+                
+                if (pedidosToRender.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🍰</div>
+                            <h3>No hay pedidos registrados</h3>
+                            <p>Comienza creando tu primer pedido</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = pedidosToRender.map(p => `
+                    <div class="pedido-card">
+                        <div class="pedido-header">
+                            <div>
+                                <div class="pedido-title">${p.cliente}</div>
+                                <div style="color: #666; margin-top: 5px;">${p.tipo_producto}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="pedido-date">${this.formatDate(p.fecha_entrega)} ${p.hora_entrega || ''}</div>
+                                <span class="status-badge status-${p.estado}">${this.formatEstado(p.estado)}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="pedido-info">
+                            <div>📱 ${p.telefono}</div>
+                            ${p.direccion ? `<div>📍 ${p.direccion}</div>` : ''}
+                            ${p.precio ? `<div>💰 $${parseFloat(p.precio).toFixed(2)}</div>` : ''}
+                            ${p.anticipo ? `<div>💵 Anticipo: $${parseFloat(p.anticipo).toFixed(2)}</div>` : ''}
+                        </div>
+
+                        <div style="margin: 10px 0; color: #555;">
+                            <strong>Descripción:</strong> ${p.descripcion}
+                        </div>
+
+                        ${p.notas ? `<div style="margin: 10px 0; color: #666; font-style: italic;">📝 ${p.notas}</div>` : ''}
+
+                        ${p.imagenes && p.imagenes.length > 0 ? `
+                            <div class="pedido-images">
+                                ${p.imagenes.map(img => `<img src="${img}" onclick="app.showImageModal('${img}')">`).join('')}
+                            </div>
+                        ` : ''}
+
+                        <div class="pedido-actions">
+                            <button class="btn btn-success" onclick="app.editPedido(${p.id})">✏️ Editar</button>
+                            <button class="btn btn-primary" onclick="app.viewPedido(${p.id})">👁️ Ver Detalles</button>
+                            <button class="btn btn-danger" onclick="app.confirmDelete(${p.id})">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // Renderizar calendario
+            renderCalendar: function() {
+                const year = this.currentMonth.getFullYear();
+                const month = this.currentMonth.getMonth();
+                
+                document.getElementById('monthYear').textContent = 
+                    new Date(year, month).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const daysInPrevMonth = new Date(year, month, 0).getDate();
+                
+                const calendar = document.getElementById('calendar');
+                calendar.innerHTML = '';
+                
+                const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                days.forEach(day => {
+                    const div = document.createElement('div');
+                    div.className = 'calendar-header';
+                    div.textContent = day;
+                    calendar.appendChild(div);
+                });
+                
+                for (let i = firstDay - 1; i >= 0; i--) {
+                    const div = document.createElement('div');
+                    div.className = 'calendar-day other-month';
+                    div.innerHTML = `<div class="calendar-day-number">${daysInPrevMonth - i}</div>`;
+                    calendar.appendChild(div);
+                }
+                
+                const today = new Date();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const div = document.createElement('div');
+                    div.className = 'calendar-day';
+                    
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    
+                    if (today.getDate() === day && today.getMonth() === month && today.getFullYear() === year) {
+                        div.classList.add('today');
+                    }
+                    
+                    let eventsHtml = '';
+                    const dayPedidos = this.pedidos.filter(p => p.fecha_entrega === dateStr);
+                    dayPedidos.forEach(p => {
+                        eventsHtml += `<div class="calendar-event" onclick="event.stopPropagation(); app.viewPedido(${p.id})">${p.cliente}</div>`;
+                    });
+                    
+                    div.innerHTML = `
+                        <div class="calendar-day-number">${day}</div>
+                        ${eventsHtml}
+                    `;
+                    
+                    div.onclick = () => {
+                        if (dayPedidos.length > 0) {
+                            this.showSection('lista', document.querySelectorAll('.nav-btn')[1]);
+                            document.getElementById('filterFecha').value = dateStr;
+                            this.filterPedidos();
+                        }
+                    };
+                    
+                    calendar.appendChild(div);
+                }
+                
+                const remainingCells = 42 - (firstDay + daysInMonth);
+                for (let i = 1; i <= remainingCells; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'calendar-day other-month';
+                    div.innerHTML = `<div class="calendar-day-number">${i}</div>`;
+                    calendar.appendChild(div);
+                }
+            },
+
+            changeMonth: function(delta) {
+                this.currentMonth.setMonth(this.currentMonth.getMonth() + delta);
+                this.renderCalendar();
+            },
+
+            filterPedidos: function() {
+                const search = document.getElementById('searchInput').value.toLowerCase();
+                const estado = document.getElementById('filterEstado').value;
+                const fecha = document.getElementById('filterFecha').value;
+                
+                let filtered = this.pedidos.filter(p => {
+                    const matchSearch = !search || 
+                        p.cliente.toLowerCase().includes(search) || 
+                        p.tipo_producto.toLowerCase().includes(search);
+                    const matchEstado = !estado || p.estado === estado;
+                    const matchFecha = !fecha || p.fecha_entrega === fecha;
+                    
+                    return matchSearch && matchEstado && matchFecha;
+                });
+                
+                this.renderPedidos(filtered);
+            },
+
+            clearFilters: function() {
+                document.getElementById('searchInput').value = '';
+                document.getElementById('filterEstado').value = '';
+                document.getElementById('filterFecha').value = '';
+                this.renderPedidos();
+            },
+
+            viewPedido: function(id) {
+                const p = this.pedidos.find(ped => ped.id === id);
+                if (!p) return;
+                
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = `
+                    <h2 style="margin-bottom: 20px; color: #2c3e50;">Detalle del Pedido</h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cliente</label>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${p.cliente}</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${p.telefono}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Producto</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${p.tipo_producto}</div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha de Entrega</label>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${this.formatDate(p.fecha_entrega)} ${p.hora_entrega || ''}</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <span class="status-badge status-${p.estado}">${this.formatEstado(p.estado)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${p.direccion ? `
+                    <div class="form-group">
+                        <label>Dirección</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${p.direccion}</div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="form-row">
+                        ${p.precio ? `
+                        <div class="form-group">
+                            <label>Precio Total</label>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 1.2rem; font-weight: bold; color: #27ae60;">
+                                $${parseFloat(p.precio).toFixed(2)}
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${p.anticipo ? `
+                        <div class="form-group">
+                            <label>Anticipo Pagado</label>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; font-weight: bold; color: #3498db;">
+                                $${parseFloat(p.anticipo).toFixed(2)}
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${(p.precio && p.anticipo) ? `
+                        <div class="form-group">
+                            <label>Pendiente por Pagar</label>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; font-weight: bold; color: #e74c3c;">
+                                $${(parseFloat(p.precio) - parseFloat(p.anticipo)).toFixed(2)}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; white-space: pre-wrap;">${p.descripcion}</div>
+                    </div>
+                    
+                    ${p.notas ? `
+                    <div class="form-group">
+                        <label>Notas Adicionales</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; white-space: pre-wrap; color: #666;">${p.notas}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${p.imagenes && p.imagenes.length > 0 ? `
+                    <div class="form-group">
+                        <label>Imágenes de Referencia</label>
+                        <div class="pedido-images" style="margin-top: 10px;">
+                            ${p.imagenes.map(img => `<img src="${img}" onclick="app.showImageModal('${img}')" style="width: 100px; height: 100px;">`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end;">
+                        <button class="btn btn-secondary" onclick="app.closeModal()">Cerrar</button>
+                        <button class="btn btn-success" onclick="app.closeModal(); app.editPedido(${p.id})">Editar</button>
+                    </div>
+                `;
+                
+                document.getElementById('modal').classList.add('active');
+            },
+
+            editPedido: function(id) {
+                const p = this.pedidos.find(ped => ped.id === id);
+                if (!p) return;
+                
+                this.editingId = id;
+                
+                document.getElementById('cliente').value = p.cliente;
+                document.getElementById('telefono').value = p.telefono;
+                document.getElementById('tipoProducto').value = p.tipo_producto;
+                document.getElementById('fechaEntrega').value = p.fecha_entrega;
+                document.getElementById('horaEntrega').value = p.hora_entrega || '';
+                document.getElementById('precio').value = p.precio || '';
+                document.getElementById('anticipo').value = p.anticipo || '';
+                document.getElementById('estado').value = p.estado;
+                document.getElementById('direccion').value = p.direccion || '';
+                document.getElementById('descripcion').value = p.descripcion;
+                document.getElementById('notas').value = p.notas || '';
+                
+                // Mostrar imágenes existentes
+                this.tempImages = [];
+                const preview = document.getElementById('imagePreview');
+                preview.innerHTML = '';
+                
+                if (p.imagenes) {
+                    p.imagenes.forEach(img => {
+                        const div = document.createElement('div');
+                        div.className = 'image-preview-item';
+                        div.innerHTML = `
+                            <img src="${img}" onclick="app.showImageModal('${img}')">
+                        `;
+                        preview.appendChild(div);
+                    });
+                }
+                
+                this.showSection('nuevo', document.querySelectorAll('.nav-btn')[0]);
+                window.scrollTo(0, 0);
+            },
+
+            confirmDelete: async function(id) {
+                if (!confirm('¿Eliminar este pedido permanentemente?')) return;
+                
+                try {
+                    const { error } = await this.supabaseClient
+                        .from('pedidos')
+                        .delete()
+                        .eq('id', id);
+                    
+                    if (error) throw error;
+                    
+                    this.showNotification('Pedido eliminado');
+                    await this.loadPedidos();
+                } catch (error) {
+                    this.showNotification('Error al eliminar', 'error');
+                }
+            },
+
+            updateStats: function() {
+                const stats = {
+                    total: this.pedidos.length,
+                    pendiente: this.pedidos.filter(p => p.estado === 'pendiente').length,
+                    proceso: this.pedidos.filter(p => p.estado === 'proceso').length,
+                    listo: this.pedidos.filter(p => p.estado === 'listo').length,
+                    entregado: this.pedidos.filter(p => p.estado === 'entregado').length
+                };
+                
+                document.getElementById('statsContainer').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.total}</div>
+                        <div class="stat-label">Total Pedidos</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);">
+                        <div class="stat-number">${stats.pendiente}</div>
+                        <div class="stat-label">Pendientes</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                        <div class="stat-number">${stats.proceso}</div>
+                        <div class="stat-label">En Proceso</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                        <div class="stat-number">${stats.listo}</div>
+                        <div class="stat-label">Listos</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                        <div class="stat-number">${stats.entregado}</div>
+                        <div class="stat-label">Entregados</div>
+                    </div>
+                `;
+            },
+
+            exportData: function() {
+                const dataStr = JSON.stringify(this.pedidos, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `pasteleria_backup_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                this.showNotification('Datos exportados');
+            },
+
+            showSyncIndicator: function() {
+                const indicator = document.getElementById('syncIndicator');
+                indicator.classList.add('show');
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+            },
+
+            // Utilidades
+            formatDate: function(dateStr) {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('es-ES', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                });
+            },
+
+            formatEstado: function(estado) {
+                const estados = {
+                    'pendiente': 'Pendiente',
+                    'proceso': 'En Proceso',
+                    'listo': 'Listo',
+                    'entregado': 'Entregado',
+                    'cancelado': 'Cancelado'
+                };
+                return estados[estado] || estado;
+            },
+
+            showNotification: function(message, type = 'success') {
+                const notif = document.getElementById('notification');
+                notif.textContent = message;
+                notif.style.background = type === 'error' ? '#e74c3c' : '#27ae60';
+                notif.style.display = 'block';
+                setTimeout(() => {
+                    notif.style.display = 'none';
+                }, 3000);
+            },
+
+            closeModal: function() {
+                document.getElementById('modal').classList.remove('active');
+            },
+
+            showImageModal: function(src) {
+                document.getElementById('modalImage').src = src;
+                document.getElementById('imageModal').classList.add('active');
+            },
+
+            closeImageModal: function() {
+                document.getElementById('imageModal').classList.remove('active');
+            }
+        };
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            app.init();
+        });
+    </script>
+</body>
+</html>
