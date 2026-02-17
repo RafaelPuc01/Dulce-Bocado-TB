@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Pastelería - Agenda Supabase</title>
+    <title>🧁 Mi Pastelería - Agenda</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,11 +13,29 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #e8927c;
+            --primary-dark: #d67b65;
+            --secondary: #f4e4e1;
+            --accent: #9b6b9e;
+            --accent-light: #c9a8cc;
+            --cream: #faf6f3;
+            --white: #ffffff;
+            --text: #4a4a4a;
+            --text-light: #7a7a7a;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.12);
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #faf6f3 0%, #f4e4e1 100%);
             min-height: 100vh;
             padding: 20px;
+            color: var(--text);
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e8927c' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
 
         .container {
@@ -26,69 +45,185 @@
 
         header {
             text-align: center;
-            color: white;
             margin-bottom: 30px;
+            position: relative;
         }
 
-        header h1 {
+        .logo {
+            font-family: 'Playfair Display', serif;
             font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tagline {
+            color: var(--text-light);
+            font-size: 1rem;
+            font-weight: 300;
+            letter-spacing: 1px;
         }
 
         .connection-status {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            margin-top: 10px;
-            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            margin-top: 15px;
+            font-weight: 500;
+            background: var(--white);
+            box-shadow: var(--shadow);
         }
 
         .status-connected {
-            background: #27ae60;
+            color: #27ae60;
         }
 
         .status-disconnected {
+            color: #e74c3c;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-connected .status-dot {
+            background: #27ae60;
+        }
+
+        .status-disconnected .status-dot {
             background: #e74c3c;
         }
 
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Notificaciones */
+        .notifications-panel {
+            background: linear-gradient(135deg, #fff9f0 0%, #fff5eb 100%);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+            display: none;
+        }
+
+        .notifications-panel.show {
+            display: block;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notifications-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            font-size: 1.1rem;
+        }
+
+        .notification-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--white);
+            border-radius: var(--radius-sm);
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.3s;
+        }
+
+        .notification-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .notification-icon {
+            font-size: 1.5rem;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .notification-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        /* Navegación */
         .nav-tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 25px;
             flex-wrap: wrap;
             justify-content: center;
+            background: var(--white);
+            padding: 8px;
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            max-width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .nav-btn {
             padding: 12px 24px;
             border: none;
-            border-radius: 25px;
+            border-radius: 50px;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 0.95rem;
+            font-weight: 500;
             transition: all 0.3s;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            backdrop-filter: blur(10px);
+            background: transparent;
+            color: var(--text-light);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .nav-btn.active {
-            background: white;
-            color: #667eea;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(232, 146, 124, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
-        .nav-btn:hover {
-            transform: translateY(-2px);
-            background: rgba(255,255,255,0.3);
+        .nav-btn:hover:not(.active) {
+            background: var(--secondary);
+            color: var(--primary-dark);
         }
 
+        /* Secciones */
         .section {
             display: none;
-            animation: fadeIn 0.3s;
+            animation: fadeIn 0.4s ease;
         }
 
         .section.active {
@@ -100,14 +235,31 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Cards */
         .card {
-            background: white;
-            border-radius: 20px;
+            background: var(--white);
+            border-radius: var(--radius);
             padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: var(--shadow);
             margin-bottom: 20px;
+            transition: all 0.3s;
         }
 
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--text);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Formularios */
         .form-group {
             margin-bottom: 20px;
         }
@@ -115,24 +267,27 @@
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            font-size: 0.9rem;
         }
 
         input, select, textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-            font-family: inherit;
+            padding: 14px 16px;
+            border: 2px solid #f0e6e3;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+            background: var(--cream);
         }
 
         input:focus, select:focus, textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary);
+            background: var(--white);
+            box-shadow: 0 0 0 4px rgba(232, 146, 124, 0.1);
         }
 
         textarea {
@@ -146,39 +301,47 @@
             gap: 20px;
         }
 
+        /* Upload de imágenes */
         .image-upload {
-            border: 3px dashed #ccc;
-            border-radius: 10px;
-            padding: 30px;
+            border: 3px dashed #e8d5cf;
+            border-radius: var(--radius-sm);
+            padding: 40px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
-            background: #f9f9f9;
+            background: var(--cream);
         }
 
         .image-upload:hover {
-            border-color: #667eea;
-            background: #f0f0f0;
+            border-color: var(--primary);
+            background: #fdf8f6;
+            transform: translateY(-2px);
         }
 
         .image-preview {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
+            gap: 12px;
             margin-top: 15px;
         }
 
         .image-preview-item {
             position: relative;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .image-preview img {
             width: 100%;
             height: 100px;
             object-fit: cover;
-            border-radius: 8px;
-            border: 2px solid #ddd;
             cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .image-preview img:hover {
+            transform: scale(1.05);
         }
 
         .remove-image {
@@ -187,37 +350,49 @@
             right: -8px;
             background: #e74c3c;
             color: white;
-            border: none;
+            border: 3px solid var(--white);
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
+        .remove-image:hover {
+            transform: scale(1.1);
+            background: #c0392b;
+        }
+
+        /* Botones */
         .btn {
             padding: 14px 28px;
             border: none;
-            border-radius: 10px;
+            border-radius: 50px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 0.95rem;
             font-weight: 600;
             transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-family: 'Poppins', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(232, 146, 124, 0.3);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(232, 146, 124, 0.4);
         }
 
         .btn-primary:disabled {
@@ -227,25 +402,35 @@
         }
 
         .btn-danger {
-            background: #e74c3c;
-            color: white;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
         }
 
         .btn-success {
-            background: #27ae60;
-            color: white;
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
         }
 
         .btn-secondary {
-            background: #95a5a6;
-            color: white;
+            background: var(--cream);
+            color: var(--text);
+            border: 2px solid #e8d5cf;
         }
 
+        .btn-secondary:hover {
+            background: #f0e6e3;
+            border-color: var(--primary);
+        }
+
+        /* Filtros */
         .filters {
             display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 25px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .search-box {
@@ -255,207 +440,292 @@
         }
 
         .search-box input {
-            padding-left: 40px;
+            padding-left: 45px;
+            background: var(--cream);
         }
 
         .search-box::before {
             content: "🔍";
             position: absolute;
-            left: 12px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
+            font-size: 1.1rem;
         }
 
+        /* Tarjetas de pedidos */
         .pedido-card {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-left: 5px solid #667eea;
-            transition: transform 0.2s;
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary);
+            transition: all 0.3s;
             position: relative;
             overflow: hidden;
+            box-shadow: var(--shadow);
         }
 
         .pedido-card:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .pedido-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, transparent 50%, rgba(232, 146, 124, 0.03) 50%);
+            border-radius: 0 0 0 100%;
         }
 
         .pedido-header {
             display: flex;
             justify-content: space-between;
             align-items: start;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
         }
 
         .pedido-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #2c3e50;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .pedido-producto {
+            color: var(--primary-dark);
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-top: 4px;
         }
 
         .pedido-date {
-            background: #667eea;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            padding: 8px 16px;
+            border-radius: 50px;
             font-size: 0.9rem;
             font-weight: 600;
+            box-shadow: 0 4px 10px rgba(232, 146, 124, 0.3);
         }
 
         .pedido-info {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin: 15px 0;
+            gap: 12px;
+            margin: 20px 0;
             font-size: 0.95rem;
-            color: #555;
+            color: var(--text-light);
         }
 
         .pedido-info div {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--cream);
+            border-radius: 8px;
         }
 
         .status-badge {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .status-pendiente { background: #f39c12; color: white; }
-        .status-proceso { background: #3498db; color: white; }
-        .status-listo { background: #9b59b6; color: white; }
-        .status-entregado { background: #27ae60; color: white; }
-        .status-cancelado { background: #e74c3c; color: white; }
+        .status-pendiente { background: #fff3cd; color: #856404; }
+        .status-proceso { background: #d1ecf1; color: #0c5460; }
+        .status-listo { background: #e2d4f0; color: #5a2d6c; }
+        .status-entregado { background: #d4edda; color: #155724; }
+        .status-cancelado { background: #f8d7da; color: #721c24; }
 
         .pedido-images {
             display: flex;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 12px;
+            margin-top: 15px;
             overflow-x: auto;
+            padding: 5px;
         }
 
         .pedido-images img {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
+            border: 3px solid var(--white);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
         }
 
         .pedido-images img:hover {
-            border-color: #667eea;
-            transform: scale(1.05);
+            transform: scale(1.1) rotate(2deg);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-color: var(--primary);
         }
 
         .pedido-actions {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 20px;
             flex-wrap: wrap;
         }
 
         .pedido-actions button {
-            padding: 8px 16px;
-            font-size: 14px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
         }
 
+        /* Calendario mejorado con badges */
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
+            gap: 8px;
             margin-top: 20px;
         }
 
         .calendar-header {
             text-align: center;
-            font-weight: 700;
-            color: #667eea;
-            padding: 10px;
+            font-weight: 600;
+            color: var(--accent);
+            padding: 15px 10px;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
         }
 
         .calendar-day {
-            background: #f8f9fa;
-            border-radius: 10px;
+            background: var(--white);
+            border-radius: var(--radius-sm);
             padding: 10px;
-            min-height: 100px;
+            min-height: 90px;
             border: 2px solid transparent;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
         .calendar-day:hover {
-            border-color: #667eea;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
         .calendar-day.other-month {
-            opacity: 0.3;
+            opacity: 0.4;
+            background: var(--cream);
         }
 
         .calendar-day.today {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(232, 146, 124, 0.3);
         }
 
         .calendar-day-number {
-            font-weight: 700;
-            margin-bottom: 5px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
         }
 
-        .calendar-event {
-            background: rgba(102, 126, 234, 0.9);
-            color: white;
-            padding: 3px 6px;
-            border-radius: 4px;
+        /* BADGE DE PEDIDOS - LO QUE PEDISTE */
+        .calendar-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            min-width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 0.75rem;
-            margin-bottom: 3px;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .badge-low { background: #27ae60; }      /* 1-2 pedidos */
+        .badge-medium { background: #f39c12; }   /* 3-4 pedidos */
+        .badge-high { background: #e74c3c; }     /* 5+ pedidos */
+
+        .calendar-event {
+            background: rgba(232, 146, 124, 0.15);
+            color: var(--primary-dark);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            margin-bottom: 4px;
             cursor: pointer;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            font-weight: 500;
+            border-left: 3px solid var(--primary);
+            transition: all 0.2s;
         }
 
         .calendar-event:hover {
-            background: rgba(102, 126, 234, 1);
+            background: rgba(232, 146, 124, 0.25);
+            transform: translateX(3px);
+        }
+
+        .calendar-day.today .calendar-event {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-left-color: white;
         }
 
         .calendar-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
         }
 
         .month-year {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #2c3e50;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--text);
         }
 
+        /* Estados vacíos */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #7f8c8d;
+            color: var(--text-light);
         }
 
         .empty-state-icon {
             font-size: 4rem;
             margin-bottom: 20px;
+            opacity: 0.5;
         }
 
+        /* Modales */
         .modal {
             display: none;
             position: fixed;
@@ -463,7 +733,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -472,23 +743,25 @@
 
         .modal.active {
             display: flex;
+            animation: fadeIn 0.3s;
         }
 
         .modal-content {
-            background: white;
-            border-radius: 20px;
+            background: var(--white);
+            border-radius: var(--radius);
             max-width: 800px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
 
         .modal-close {
             position: absolute;
             top: 15px;
             right: 15px;
-            background: rgba(0,0,0,0.1);
+            background: var(--cream);
             border: none;
             width: 40px;
             height: 40px;
@@ -499,54 +772,75 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            color: var(--text);
+            z-index: 10;
         }
 
         .modal-close:hover {
-            background: rgba(0,0,0,0.2);
+            background: var(--primary);
+            color: white;
+            transform: rotate(90deg);
         }
 
         .modal-body {
-            padding: 30px;
+            padding: 35px;
         }
 
         .image-modal img {
             width: 100%;
-            border-radius: 10px;
+            border-radius: var(--radius-sm);
         }
 
+        /* Estadísticas */
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--white);
+            color: var(--text);
             padding: 20px;
-            border-radius: 15px;
+            border-radius: var(--radius);
             text-align: center;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+            border-top: 4px solid var(--primary);
         }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-card:nth-child(2) { border-top-color: #f39c12; }
+        .stat-card:nth-child(3) { border-top-color: #3498db; }
+        .stat-card:nth-child(4) { border-top-color: #9b59b6; }
+        .stat-card:nth-child(5) { border-top-color: #27ae60; }
 
         .stat-number {
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 5px;
+            color: var(--primary-dark);
         }
 
         .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            font-weight: 500;
         }
 
+        /* Loading */
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
             border: 3px solid rgba(255,255,255,.3);
             border-radius: 50%;
-            border-top-color: white;
+            border-top-color: var(--primary);
             animation: spin 1s ease-in-out infinite;
         }
 
@@ -554,24 +848,26 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Indicadores */
         .sync-indicator {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #27ae60;
+            bottom: 25px;
+            right: 25px;
+            background: var(--accent);
             color: white;
-            padding: 12px 20px;
+            padding: 14px 24px;
             border-radius: 50px;
             display: none;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            gap: 10px;
+            box-shadow: 0 8px 25px rgba(155, 107, 158, 0.3);
             z-index: 1000;
+            font-weight: 500;
         }
 
         .sync-indicator.show {
             display: flex;
-            animation: slideUp 0.3s;
+            animation: slideUp 0.4s ease;
         }
 
         @keyframes slideUp {
@@ -579,74 +875,72 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 1.8rem;
-            }
-            
-            .calendar {
-                gap: 5px;
-            }
-            
-            .calendar-day {
-                min-height: 60px;
-                padding: 5px;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .pedido-header {
-                flex-direction: column;
-            }
-        }
-
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #27ae60;
+            top: 25px;
+            right: 25px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            padding: 16px 28px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(232, 146, 124, 0.3);
             display: none;
-            animation: slideIn 0.3s;
+            animation: slideIn 0.4s ease;
             z-index: 2000;
+            font-weight: 500;
         }
 
         @keyframes slideIn {
-            from { transform: translateX(400px); }
-            to { transform: translateX(0); }
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
+        /* Configuración */
         .config-panel {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
+            background: var(--cream);
+            border-radius: var(--radius);
+            padding: 25px;
             margin-bottom: 20px;
+            border: 2px solid #f0e6e3;
         }
 
-        .config-panel input {
-            margin-bottom: 10px;
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo { font-size: 1.8rem; }
+            .nav-tabs { padding: 6px; }
+            .nav-btn { padding: 10px 16px; font-size: 0.85rem; }
+            .calendar { gap: 4px; }
+            .calendar-day { min-height: 70px; padding: 6px; }
+            .form-row { grid-template-columns: 1fr; }
+            .pedido-header { flex-direction: column; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🧁 Mi Pastelería</h1>
-            <p>Sistema de Gestión de Pedidos - Supabase</p>
+            <div class="logo">🧁 Mi Pastelería</div>
+            <div class="tagline">Gestión de Pedidos Especiales</div>
             <div id="connectionStatus" class="connection-status status-disconnected">
-                ● Desconectado
+                <span class="status-dot"></span>
+                <span id="statusText">Desconectado</span>
             </div>
         </header>
 
+        <!-- Panel de Notificaciones -->
+        <div id="notificationsPanel" class="notifications-panel">
+            <div class="notifications-header">
+                <span>🔔</span>
+                <span>Notificaciones de Pedidos</span>
+            </div>
+            <div id="notificationsList"></div>
+        </div>
+
         <!-- Configuración inicial -->
         <div id="configSection" class="card">
-            <h2 style="margin-bottom: 20px; color: #2c3e50;">Configuración de Supabase</h2>
-            <p style="margin-bottom: 15px; color: #666;">Ingresa tus credenciales de Supabase (solo la primera vez):</p>
+            <h2 class="card-title"><span>⚙️</span> Configuración de Supabase</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">Ingresa tus credenciales para sincronizar tus pedidos en todos tus dispositivos:</p>
             
             <div class="form-group">
                 <label>Supabase URL</label>
@@ -659,22 +953,30 @@
             </div>
             
             <button class="btn btn-primary" onclick="app.saveConfig()" style="width: 100%;">
-                Conectar
+                <span>🔗</span> Conectar a Supabase
             </button>
         </div>
 
         <div id="appContent" style="display: none;">
             <div class="nav-tabs">
-                <button class="nav-btn active" onclick="app.showSection('nuevo', this)">➕ Nuevo Pedido</button>
-                <button class="nav-btn" onclick="app.showSection('lista', this)">📋 Lista de Pedidos</button>
-                <button class="nav-btn" onclick="app.showSection('calendario', this)">📅 Calendario</button>
-                <button class="nav-btn" onclick="app.showSection('config', this)">⚙️ Config</button>
+                <button class="nav-btn active" onclick="app.showSection('nuevo', this)">
+                    <span>➕</span> Nuevo Pedido
+                </button>
+                <button class="nav-btn" onclick="app.showSection('lista', this)">
+                    <span>📋</span> Pedidos
+                </button>
+                <button class="nav-btn" onclick="app.showSection('calendario', this)">
+                    <span>📅</span> Calendario
+                </button>
+                <button class="nav-btn" onclick="app.showSection('config', this)">
+                    <span>⚙️</span> Config
+                </button>
             </div>
 
             <!-- Sección Nuevo Pedido -->
             <div id="nuevo" class="section active">
                 <div class="card">
-                    <h2 style="margin-bottom: 25px; color: #2c3e50;">Registrar Nuevo Pedido</h2>
+                    <h2 class="card-title"><span>🎂</span> Registrar Nuevo Pedido</h2>
                     
                     <form id="pedidoForm">
                         <div class="form-row">
@@ -692,7 +994,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="tipoProducto">Tipo de Producto *</label>
-                                <input type="text" id="tipoProducto" required placeholder="Ej: Pastel de bodas, cupcakes...">
+                                <input type="text" id="tipoProducto" required placeholder="Ej: Pastel de bodas 3 pisos">
                             </div>
                             
                             <div class="form-group">
@@ -722,11 +1024,11 @@
                             <div class="form-group">
                                 <label for="estado">Estado del Pedido</label>
                                 <select id="estado">
-                                    <option value="pendiente">Pendiente</option>
-                                    <option value="proceso">En Proceso</option>
-                                    <option value="listo">Listo</option>
-                                    <option value="entregado">Entregado</option>
-                                    <option value="cancelado">Cancelado</option>
+                                    <option value="pendiente">🟡 Pendiente</option>
+                                    <option value="proceso">🔵 En Proceso</option>
+                                    <option value="listo">🟣 Listo</option>
+                                    <option value="entregado">🟢 Entregado</option>
+                                    <option value="cancelado">🔴 Cancelado</option>
                                 </select>
                             </div>
                         </div>
@@ -738,27 +1040,27 @@
 
                         <div class="form-group">
                             <label for="descripcion">Descripción Detallada *</label>
-                            <textarea id="descripcion" required placeholder="Describe el pedido: sabores, colores, tamaño, decoración..."></textarea>
+                            <textarea id="descripcion" required placeholder="Describe el pedido: sabores, colores, tamaño, número de porciones, decoración especial..."></textarea>
                         </div>
 
                         <div class="form-group">
                             <label for="notas">Notas Adicionales</label>
-                            <textarea id="notas" placeholder="Alergias, preferencias especiales..."></textarea>
+                            <textarea id="notas" placeholder="Alergias alimentarias, preferencias especiales, instrucciones de entrega..."></textarea>
                         </div>
 
                         <div class="form-group">
                             <label>Imágenes de Referencia</label>
                             <div class="image-upload" onclick="document.getElementById('imagenes').click()">
-                                <div style="font-size: 3rem; margin-bottom: 10px;">📷</div>
-                                <div>Haz clic para subir imágenes</div>
-                                <div style="font-size: 0.9rem; color: #666; margin-top: 5px;">Se subirán a la nube automáticamente</div>
+                                <div style="font-size: 3.5rem; margin-bottom: 15px;">📷</div>
+                                <div style="font-weight: 500; color: var(--text); margin-bottom: 8px;">Haz clic para subir imágenes</div>
+                                <div style="font-size: 0.9rem; color: var(--text-light);">Puedes seleccionar múltiples fotos de inspiración</div>
                             </div>
                             <input type="file" id="imagenes" multiple accept="image/*" style="display: none;" onchange="app.previewImages(this)">
                             <div class="image-preview" id="imagePreview"></div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;" id="submitBtn">
-                            💾 Guardar Pedido
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 25px;" id="submitBtn">
+                            <span>💾</span> Guardar Pedido
                         </button>
                     </form>
                 </div>
@@ -773,23 +1075,27 @@
                         <div class="search-box">
                             <input type="text" id="searchInput" placeholder="Buscar por cliente o producto..." onkeyup="app.filterPedidos()">
                         </div>
-                        <select id="filterEstado" onchange="app.filterPedidos()" style="width: auto; min-width: 150px;">
+                        <select id="filterEstado" onchange="app.filterPedidos()" style="width: auto; min-width: 160px;">
                             <option value="">Todos los estados</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="proceso">En Proceso</option>
-                            <option value="listo">Listo</option>
-                            <option value="entregado">Entregado</option>
-                            <option value="cancelado">Cancelado</option>
+                            <option value="pendiente">🟡 Pendiente</option>
+                            <option value="proceso">🔵 En Proceso</option>
+                            <option value="listo">🟣 Listo</option>
+                            <option value="entregado">🟢 Entregado</option>
+                            <option value="cancelado">🔴 Cancelado</option>
                         </select>
                         <input type="date" id="filterFecha" onchange="app.filterPedidos()" style="width: auto;">
-                        <button class="btn btn-secondary" onclick="app.clearFilters()">Limpiar</button>
-                        <button class="btn btn-primary" onclick="app.loadPedidos()">🔄 Actualizar</button>
+                        <button class="btn btn-secondary" onclick="app.clearFilters()">
+                            <span>🧹</span> Limpiar
+                        </button>
+                        <button class="btn btn-primary" onclick="app.loadPedidos()">
+                            <span>🔄</span> Actualizar
+                        </button>
                     </div>
 
                     <div id="pedidosList">
                         <div class="empty-state">
                             <div class="loading"></div>
-                            <p>Cargando pedidos...</p>
+                            <p style="margin-top: 15px; color: var(--text-light);">Cargando tus pedidos...</p>
                         </div>
                     </div>
                 </div>
@@ -799,9 +1105,13 @@
             <div id="calendario" class="section">
                 <div class="card">
                     <div class="calendar-controls">
-                        <button class="btn btn-secondary" onclick="app.changeMonth(-1)">◀ Anterior</button>
+                        <button class="btn btn-secondary" onclick="app.changeMonth(-1)">
+                            <span>◀</span> Anterior
+                        </button>
                         <div class="month-year" id="monthYear"></div>
-                        <button class="btn btn-secondary" onclick="app.changeMonth(1)">Siguiente ▶</button>
+                        <button class="btn btn-secondary" onclick="app.changeMonth(1)">
+                            Siguiente <span>▶</span>
+                        </button>
                     </div>
                     <div class="calendar" id="calendar"></div>
                 </div>
@@ -810,19 +1120,22 @@
             <!-- Sección Configuración -->
             <div id="config" class="section">
                 <div class="card">
-                    <h2 style="margin-bottom: 20px; color: #2c3e50;">Configuración</h2>
+                    <h2 class="card-title"><span>⚙️</span> Configuración</h2>
                     
                     <div class="config-panel">
-                        <h3 style="margin-bottom: 15px;">Conexión Supabase</h3>
-                        <p><strong>URL:</strong> <span id="configUrl"></span></p>
+                        <h3 style="margin-bottom: 15px; color: var(--primary-dark);">Conexión Supabase</h3>
+                        <p style="margin-bottom: 10px;"><strong>URL:</strong> <span id="configUrl" style="color: var(--text-light);"></span></p>
                         <button class="btn btn-danger" onclick="app.clearConfig()" style="margin-top: 10px;">
-                            Cambiar Credenciales
+                            <span>🔄</span> Cambiar Credenciales
                         </button>
                     </div>
 
                     <div class="config-panel">
-                        <h3 style="margin-bottom: 15px;">Datos</h3>
-                        <button class="btn btn-secondary" onclick="app.exportData()">📥 Exportar Datos (JSON)</button>
+                        <h3 style="margin-bottom: 15px; color: var(--primary-dark);">Respaldo de Datos</h3>
+                        <p style="margin-bottom: 15px; color: var(--text-light); font-size: 0.9rem;">Descarga todos tus pedidos en formato JSON como respaldo de seguridad.</p>
+                        <button class="btn btn-secondary" onclick="app.exportData()">
+                            <span>📥</span> Exportar Datos (JSON)
+                        </button>
                     </div>
                 </div>
             </div>
@@ -851,7 +1164,6 @@
     </div>
 
     <script>
-        // Objeto global de la aplicación para evitar conflictos de nombres
         const app = {
             supabaseClient: null,
             pedidos: [],
@@ -860,7 +1172,6 @@
             tempImages: [],
             isOnline: false,
 
-            // Inicialización
             init: function() {
                 const savedUrl = localStorage.getItem('supabaseUrl');
                 const savedKey = localStorage.getItem('supabaseKey');
@@ -871,14 +1182,9 @@
                     document.getElementById('configSection').style.display = 'block';
                 }
                 
-                // Establecer fecha mínima como hoy
                 document.getElementById('fechaEntrega').min = new Date().toISOString().split('T')[0];
-                
-                // Configurar evento del formulario
-                document.getElementById('pedidoForm').addEventListener('submit', (e) => this.savePedido(e));
             },
 
-            // Guardar configuración
             saveConfig: function() {
                 const url = document.getElementById('supabaseUrl').value.trim();
                 const key = document.getElementById('supabaseKey').value.trim();
@@ -894,10 +1200,8 @@
                 this.initSupabase(url, key);
             },
 
-            // Inicializar Supabase
             initSupabase: function(url, key) {
                 try {
-                    // Usar la función createClient del script cargado
                     this.supabaseClient = supabase.createClient(url, key);
                     
                     document.getElementById('configSection').style.display = 'none';
@@ -907,7 +1211,6 @@
                     this.updateConnectionStatus(true);
                     this.loadPedidos();
                     
-                    // Suscribirse a cambios en tiempo real
                     this.supabaseClient
                         .channel('pedidos')
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
@@ -916,7 +1219,7 @@
                         })
                         .subscribe();
                     
-                    this.showNotification('Conectado a Supabase correctamente');
+                    this.showNotification('¡Conectado exitosamente! 🎉');
                 } catch (error) {
                     console.error('Error:', error);
                     this.showNotification('Error al conectar: ' + error.message, 'error');
@@ -924,20 +1227,19 @@
                 }
             },
 
-            // Actualizar estado de conexión
             updateConnectionStatus: function(connected) {
                 this.isOnline = connected;
                 const status = document.getElementById('connectionStatus');
+                const text = document.getElementById('statusText');
                 if (connected) {
                     status.className = 'connection-status status-connected';
-                    status.textContent = '● Conectado';
+                    text.textContent = 'Conectado';
                 } else {
                     status.className = 'connection-status status-disconnected';
-                    status.textContent = '● Desconectado';
+                    text.textContent = 'Desconectado';
                 }
             },
 
-            // Limpiar configuración
             clearConfig: function() {
                 if (confirm('¿Seguro que quieres cambiar las credenciales?')) {
                     localStorage.removeItem('supabaseUrl');
@@ -946,7 +1248,6 @@
                 }
             },
 
-            // Cargar pedidos desde Supabase
             loadPedidos: async function() {
                 try {
                     const { data, error } = await this.supabaseClient
@@ -960,13 +1261,62 @@
                     this.renderPedidos();
                     this.renderCalendar();
                     this.updateStats();
+                    this.checkNotifications(); // Verificar notificaciones al cargar
                 } catch (error) {
                     console.error('Error cargando pedidos:', error);
                     this.showNotification('Error al cargar pedidos', 'error');
                 }
             },
 
-            // Navegación entre secciones
+            // NUEVA FUNCIÓN: Verificar notificaciones
+            checkNotifications: function() {
+                const today = new Date().toISOString().split('T')[0];
+                const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+                
+                const pedidosHoy = this.pedidos.filter(p => p.fecha_entrega === today && p.estado !== 'entregado');
+                const pedidosManana = this.pedidos.filter(p => p.fecha_entrega === tomorrow && p.estado !== 'entregado');
+                const pedidosUrgentes = this.pedidos.filter(p => p.estado === 'listo' && p.fecha_entrega <= today);
+                
+                const notificationsList = document.getElementById('notificationsList');
+                const panel = document.getElementById('notificationsPanel');
+                
+                let html = '';
+                
+                if (pedidosHoy.length > 0) {
+                    html += this.createNotificationItem('🔴', 'Pedidos para hoy', 
+                        `${pedidosHoy.length} pedido(s) deben entregarse hoy`, 'urgent');
+                }
+                
+                if (pedidosManana.length > 0) {
+                    html += this.createNotificationItem('🟠', 'Pedidos para mañana', 
+                        `${pedidosManana.length} pedido(s) programados`, 'warning');
+                }
+                
+                if (pedidosUrgentes.length > 0) {
+                    html += this.createNotificationItem('⚡', 'Pedidos listos sin entregar', 
+                        `${pedidosUrgentes.length} pedido(s) esperando entrega`, 'urgent');
+                }
+                
+                if (html) {
+                    notificationsList.innerHTML = html;
+                    panel.classList.add('show');
+                } else {
+                    panel.classList.remove('show');
+                }
+            },
+
+            createNotificationItem: function(icon, title, meta, type) {
+                return `
+                    <div class="notification-item">
+                        <span class="notification-icon">${icon}</span>
+                        <div class="notification-content">
+                            <div class="notification-title">${title}</div>
+                            <div class="notification-meta">${meta}</div>
+                        </div>
+                    </div>
+                `;
+            },
+
             showSection: function(section, btn) {
                 document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -981,7 +1331,6 @@
                 }
             },
 
-            // Preview de imágenes
             previewImages: function(input) {
                 const preview = document.getElementById('imagePreview');
                 
@@ -1007,14 +1356,12 @@
                 }
             },
 
-            // Remover imagen temporal
             removeTempImage: function(btn) {
                 const index = Array.from(btn.parentElement.parentElement.children).indexOf(btn.parentElement);
                 this.tempImages.splice(index, 1);
                 btn.parentElement.remove();
             },
 
-            // Subir imágenes a Supabase Storage
             uploadImages: async function() {
                 const uploadedUrls = [];
                 
@@ -1043,7 +1390,6 @@
                 return uploadedUrls;
             },
 
-            // Guardar pedido
             savePedido: async function(e) {
                 e.preventDefault();
                 
@@ -1052,10 +1398,8 @@
                 submitBtn.innerHTML = '<span class="loading"></span> Guardando...';
                 
                 try {
-                    // Subir imágenes primero
                     const imageUrls = await this.uploadImages();
                     
-                    // Si estamos editando, mantener las imágenes anteriores
                     let finalImages = imageUrls;
                     if (this.editingId) {
                         const existing = this.pedidos.find(p => p.id === this.editingId);
@@ -1093,15 +1437,13 @@
                     
                     if (result.error) throw result.error;
                     
-                    this.showNotification(this.editingId ? 'Pedido actualizado' : 'Pedido guardado');
+                    this.showNotification(this.editingId ? '¡Pedido actualizado! 🎂' : '¡Pedido guardado! 🧁');
                     
-                    // Limpiar formulario
                     e.target.reset();
                     document.getElementById('imagePreview').innerHTML = '';
                     this.tempImages = [];
                     this.editingId = null;
                     
-                    // Recargar datos
                     await this.loadPedidos();
                     
                 } catch (error) {
@@ -1109,11 +1451,10 @@
                     this.showNotification('Error al guardar: ' + error.message, 'error');
                 } finally {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '💾 Guardar Pedido';
+                    submitBtn.innerHTML = '<span>💾</span> Guardar Pedido';
                 }
             },
 
-            // Renderizar lista de pedidos
             renderPedidos: function(pedidosToRender = this.pedidos) {
                 const container = document.getElementById('pedidosList');
                 
@@ -1121,8 +1462,8 @@
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">🍰</div>
-                            <h3>No hay pedidos registrados</h3>
-                            <p>Comienza creando tu primer pedido</p>
+                            <h3 style="margin-bottom: 10px; color: var(--text);">No hay pedidos registrados</h3>
+                            <p style="color: var(--text-light);">Comienza creando tu primer pedido especial</p>
                         </div>
                     `;
                     return;
@@ -1133,7 +1474,7 @@
                         <div class="pedido-header">
                             <div>
                                 <div class="pedido-title">${p.cliente}</div>
-                                <div style="color: #666; margin-top: 5px;">${p.tipo_producto}</div>
+                                <div class="pedido-producto">🧁 ${p.tipo_producto}</div>
                             </div>
                             <div style="text-align: right;">
                                 <div class="pedido-date">${this.formatDate(p.fecha_entrega)} ${p.hora_entrega || ''}</div>
@@ -1148,11 +1489,11 @@
                             ${p.anticipo ? `<div>💵 Anticipo: $${parseFloat(p.anticipo).toFixed(2)}</div>` : ''}
                         </div>
 
-                        <div style="margin: 10px 0; color: #555;">
-                            <strong>Descripción:</strong> ${p.descripcion}
+                        <div style="margin: 15px 0; color: var(--text); line-height: 1.6;">
+                            <strong style="color: var(--primary-dark);">Descripción:</strong> ${p.descripcion}
                         </div>
 
-                        ${p.notas ? `<div style="margin: 10px 0; color: #666; font-style: italic;">📝 ${p.notas}</div>` : ''}
+                        ${p.notas ? `<div style="margin: 15px 0; color: var(--text-light); font-style: italic; background: var(--cream); padding: 12px; border-radius: 8px;">📝 ${p.notas}</div>` : ''}
 
                         ${p.imagenes && p.imagenes.length > 0 ? `
                             <div class="pedido-images">
@@ -1161,15 +1502,21 @@
                         ` : ''}
 
                         <div class="pedido-actions">
-                            <button class="btn btn-success" onclick="app.editPedido(${p.id})">✏️ Editar</button>
-                            <button class="btn btn-primary" onclick="app.viewPedido(${p.id})">👁️ Ver Detalles</button>
-                            <button class="btn btn-danger" onclick="app.confirmDelete(${p.id})">🗑️ Eliminar</button>
+                            <button class="btn btn-success" onclick="app.editPedido(${p.id})">
+                                <span>✏️</span> Editar
+                            </button>
+                            <button class="btn btn-primary" onclick="app.viewPedido(${p.id})">
+                                <span>👁️</span> Ver Detalles
+                            </button>
+                            <button class="btn btn-danger" onclick="app.confirmDelete(${p.id})">
+                                <span>🗑️</span> Eliminar
+                            </button>
                         </div>
                     </div>
                 `).join('');
             },
 
-            // Renderizar calendario
+            // CALENDARIO MEJORADO CON BADGES
             renderCalendar: function() {
                 const year = this.currentMonth.getFullYear();
                 const month = this.currentMonth.getMonth();
@@ -1192,6 +1539,7 @@
                     calendar.appendChild(div);
                 });
                 
+                // Días del mes anterior
                 for (let i = firstDay - 1; i >= 0; i--) {
                     const div = document.createElement('div');
                     div.className = 'calendar-day other-month';
@@ -1199,6 +1547,7 @@
                     calendar.appendChild(div);
                 }
                 
+                // Días del mes actual
                 const today = new Date();
                 for (let day = 1; day <= daysInMonth; day++) {
                     const div = document.createElement('div');
@@ -1210,13 +1559,33 @@
                         div.classList.add('today');
                     }
                     
-                    let eventsHtml = '';
+                    // CONTAR PEDIDOS PARA ESTE DÍA
                     const dayPedidos = this.pedidos.filter(p => p.fecha_entrega === dateStr);
-                    dayPedidos.forEach(p => {
+                    const pedidosCount = dayPedidos.length;
+                    
+                    // CREAR BADGE SI HAY PEDIDOS
+                    let badgeHtml = '';
+                    if (pedidosCount > 0) {
+                        let badgeClass = 'badge-low';
+                        if (pedidosCount >= 5) badgeClass = 'badge-high';
+                        else if (pedidosCount >= 3) badgeClass = 'badge-medium';
+                        
+                        badgeHtml = `<div class="calendar-badge ${badgeClass}">${pedidosCount}</div>`;
+                    }
+                    
+                    // EVENTOS (máximo 2 para no saturar)
+                    let eventsHtml = '';
+                    dayPedidos.slice(0, 2).forEach(p => {
                         eventsHtml += `<div class="calendar-event" onclick="event.stopPropagation(); app.viewPedido(${p.id})">${p.cliente}</div>`;
                     });
                     
+                    // Si hay más de 2, mostrar "+X más"
+                    if (pedidosCount > 2) {
+                        eventsHtml += `<div style="font-size: 0.7rem; color: var(--text-light); text-align: center; margin-top: 4px;">+${pedidosCount - 2} más</div>`;
+                    }
+                    
                     div.innerHTML = `
+                        ${badgeHtml}
                         <div class="calendar-day-number">${day}</div>
                         ${eventsHtml}
                     `;
@@ -1232,6 +1601,7 @@
                     calendar.appendChild(div);
                 }
                 
+                // Días del mes siguiente
                 const remainingCells = 42 - (firstDay + daysInMonth);
                 for (let i = 1; i <= remainingCells; i++) {
                     const div = document.createElement('div');
@@ -1277,32 +1647,34 @@
                 
                 const modalBody = document.getElementById('modalBody');
                 modalBody.innerHTML = `
-                    <h2 style="margin-bottom: 20px; color: #2c3e50;">Detalle del Pedido</h2>
+                    <h2 style="margin-bottom: 25px; color: var(--text); font-family: 'Playfair Display', serif;">
+                        <span>🎂</span> Detalle del Pedido
+                    </h2>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label>Cliente</label>
-                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${p.cliente}</div>
+                            <div style="padding: 14px; background: var(--cream); border-radius: 12px; font-weight: 500;">${p.cliente}</div>
                         </div>
                         <div class="form-group">
                             <label>Teléfono</label>
-                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${p.telefono}</div>
+                            <div style="padding: 14px; background: var(--cream); border-radius: 12px;">${p.telefono}</div>
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label>Producto</label>
-                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${p.tipo_producto}</div>
+                        <div style="padding: 14px; background: var(--cream); border-radius: 12px; color: var(--primary-dark); font-weight: 500;">${p.tipo_producto}</div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label>Fecha de Entrega</label>
-                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${this.formatDate(p.fecha_entrega)} ${p.hora_entrega || ''}</div>
+                            <div style="padding: 14px; background: var(--cream); border-radius: 12px; font-weight: 600;">${this.formatDate(p.fecha_entrega)} ${p.hora_entrega || ''}</div>
                         </div>
                         <div class="form-group">
                             <label>Estado</label>
-                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="padding: 14px; background: var(--cream); border-radius: 12px;">
                                 <span class="status-badge status-${p.estado}">${this.formatEstado(p.estado)}</span>
                             </div>
                         </div>
@@ -1311,7 +1683,7 @@
                     ${p.direccion ? `
                     <div class="form-group">
                         <label>Dirección</label>
-                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">${p.direccion}</div>
+                        <div style="padding: 14px; background: var(--cream); border-radius: 12px;">${p.direccion}</div>
                     </div>
                     ` : ''}
                     
@@ -1319,7 +1691,7 @@
                         ${p.precio ? `
                         <div class="form-group">
                             <label>Precio Total</label>
-                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 1.2rem; font-weight: bold; color: #27ae60;">
+                            <div style="padding: 14px; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 12px; font-size: 1.3rem; font-weight: 700; color: #155724;">
                                 $${parseFloat(p.precio).toFixed(2)}
                             </div>
                         </div>
@@ -1327,7 +1699,7 @@
                         ${p.anticipo ? `
                         <div class="form-group">
                             <label>Anticipo Pagado</label>
-                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; font-weight: bold; color: #3498db;">
+                            <div style="padding: 14px; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border-radius: 12px; font-weight: 600; color: #0c5460;">
                                 $${parseFloat(p.anticipo).toFixed(2)}
                             </div>
                         </div>
@@ -1335,7 +1707,7 @@
                         ${(p.precio && p.anticipo) ? `
                         <div class="form-group">
                             <label>Pendiente por Pagar</label>
-                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; font-weight: bold; color: #e74c3c;">
+                            <div style="padding: 14px; background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-radius: 12px; font-weight: 600; color: #721c24;">
                                 $${(parseFloat(p.precio) - parseFloat(p.anticipo)).toFixed(2)}
                             </div>
                         </div>
@@ -1344,28 +1716,30 @@
                     
                     <div class="form-group">
                         <label>Descripción</label>
-                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; white-space: pre-wrap;">${p.descripcion}</div>
+                        <div style="padding: 14px; background: var(--cream); border-radius: 12px; white-space: pre-wrap; line-height: 1.6;">${p.descripcion}</div>
                     </div>
                     
                     ${p.notas ? `
                     <div class="form-group">
                         <label>Notas Adicionales</label>
-                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; white-space: pre-wrap; color: #666;">${p.notas}</div>
+                        <div style="padding: 14px; background: #fff3cd; border-radius: 12px; white-space: pre-wrap; color: #856404; border-left: 4px solid #f39c12;">${p.notas}</div>
                     </div>
                     ` : ''}
                     
                     ${p.imagenes && p.imagenes.length > 0 ? `
                     <div class="form-group">
                         <label>Imágenes de Referencia</label>
-                        <div class="pedido-images" style="margin-top: 10px;">
+                        <div class="pedido-images" style="margin-top: 15px;">
                             ${p.imagenes.map(img => `<img src="${img}" onclick="app.showImageModal('${img}')" style="width: 100px; height: 100px;">`).join('')}
                         </div>
                     </div>
                     ` : ''}
                     
-                    <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end;">
+                    <div style="margin-top: 35px; display: flex; gap: 12px; justify-content: flex-end;">
                         <button class="btn btn-secondary" onclick="app.closeModal()">Cerrar</button>
-                        <button class="btn btn-success" onclick="app.closeModal(); app.editPedido(${p.id})">Editar</button>
+                        <button class="btn btn-success" onclick="app.closeModal(); app.editPedido(${p.id})">
+                            <span>✏️</span> Editar Pedido
+                        </button>
                     </div>
                 `;
                 
@@ -1390,7 +1764,6 @@
                 document.getElementById('descripcion').value = p.descripcion;
                 document.getElementById('notas').value = p.notas || '';
                 
-                // Mostrar imágenes existentes
                 this.tempImages = [];
                 const preview = document.getElementById('imagePreview');
                 preview.innerHTML = '';
@@ -1421,7 +1794,7 @@
                     
                     if (error) throw error;
                     
-                    this.showNotification('Pedido eliminado');
+                    this.showNotification('Pedido eliminado 🗑️');
                     await this.loadPedidos();
                 } catch (error) {
                     this.showNotification('Error al eliminar', 'error');
@@ -1442,20 +1815,20 @@
                         <div class="stat-number">${stats.total}</div>
                         <div class="stat-label">Total Pedidos</div>
                     </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);">
-                        <div class="stat-number">${stats.pendiente}</div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #f39c12;">${stats.pendiente}</div>
                         <div class="stat-label">Pendientes</div>
                     </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
-                        <div class="stat-number">${stats.proceso}</div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #3498db;">${stats.proceso}</div>
                         <div class="stat-label">En Proceso</div>
                     </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
-                        <div class="stat-number">${stats.listo}</div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #9b59b6;">${stats.listo}</div>
                         <div class="stat-label">Listos</div>
                     </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
-                        <div class="stat-number">${stats.entregado}</div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #27ae60;">${stats.entregado}</div>
                         <div class="stat-label">Entregados</div>
                     </div>
                 `;
@@ -1469,7 +1842,7 @@
                 link.href = url;
                 link.download = `pasteleria_backup_${new Date().toISOString().split('T')[0]}.json`;
                 link.click();
-                this.showNotification('Datos exportados');
+                this.showNotification('Datos exportados 📥');
             },
 
             showSyncIndicator: function() {
@@ -1480,7 +1853,6 @@
                 }, 2000);
             },
 
-            // Utilidades
             formatDate: function(dateStr) {
                 const date = new Date(dateStr);
                 return date.toLocaleDateString('es-ES', { 
@@ -1492,11 +1864,11 @@
 
             formatEstado: function(estado) {
                 const estados = {
-                    'pendiente': 'Pendiente',
-                    'proceso': 'En Proceso',
-                    'listo': 'Listo',
-                    'entregado': 'Entregado',
-                    'cancelado': 'Cancelado'
+                    'pendiente': '🟡 Pendiente',
+                    'proceso': '🔵 En Proceso',
+                    'listo': '🟣 Listo',
+                    'entregado': '🟢 Entregado',
+                    'cancelado': '🔴 Cancelado'
                 };
                 return estados[estado] || estado;
             },
@@ -1504,7 +1876,9 @@
             showNotification: function(message, type = 'success') {
                 const notif = document.getElementById('notification');
                 notif.textContent = message;
-                notif.style.background = type === 'error' ? '#e74c3c' : '#27ae60';
+                notif.style.background = type === 'error' 
+                    ? 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)' 
+                    : 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)';
                 notif.style.display = 'block';
                 setTimeout(() => {
                     notif.style.display = 'none';
@@ -1525,7 +1899,6 @@
             }
         };
 
-        // Inicializar cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', function() {
             app.init();
         });
