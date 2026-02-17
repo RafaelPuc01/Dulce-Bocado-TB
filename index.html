@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧁 Mi Pastelería - Agenda</title>
+    <title>🧁 Dulce Bocado TB - Agenda</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -641,7 +641,7 @@
             font-size: 0.95rem;
         }
 
-        /* BADGE DE PEDIDOS - LO QUE PEDISTE */
+        /* BADGE DE PEDIDOS */
         .calendar-badge {
             position: absolute;
             top: 5px;
@@ -665,9 +665,9 @@
             100% { transform: scale(1); }
         }
 
-        .badge-low { background: #27ae60; }      /* 1-2 pedidos */
-        .badge-medium { background: #f39c12; }   /* 3-4 pedidos */
-        .badge-high { background: #e74c3c; }     /* 5+ pedidos */
+        .badge-low { background: #27ae60; }
+        .badge-medium { background: #f39c12; }
+        .badge-high { background: #e74c3c; }
 
         .calendar-event {
             background: rgba(232, 146, 124, 0.15);
@@ -978,7 +978,7 @@
                 <div class="card">
                     <h2 class="card-title"><span>🎂</span> Registrar Nuevo Pedido</h2>
                     
-                    <form id="pedidoForm">
+                    <form id="pedidoForm" onsubmit="return app.handleSubmit(event)">
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="cliente">Nombre del Cliente *</label>
@@ -1183,6 +1183,12 @@
                 }
                 
                 document.getElementById('fechaEntrega').min = new Date().toISOString().split('T')[0];
+                
+                // Configurar el evento del formulario correctamente
+                const form = document.getElementById('pedidoForm');
+                if (form) {
+                    form.onsubmit = (e) => this.handleSubmit(e);
+                }
             },
 
             saveConfig: function() {
@@ -1261,14 +1267,13 @@
                     this.renderPedidos();
                     this.renderCalendar();
                     this.updateStats();
-                    this.checkNotifications(); // Verificar notificaciones al cargar
+                    this.checkNotifications();
                 } catch (error) {
                     console.error('Error cargando pedidos:', error);
                     this.showNotification('Error al cargar pedidos', 'error');
                 }
             },
 
-            // NUEVA FUNCIÓN: Verificar notificaciones
             checkNotifications: function() {
                 const today = new Date().toISOString().split('T')[0];
                 const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
@@ -1390,7 +1395,8 @@
                 return uploadedUrls;
             },
 
-            savePedido: async function(e) {
+            // FUNCIÓN CORREGIDA PARA MANEJAR EL SUBMIT
+            handleSubmit: async function(e) {
                 e.preventDefault();
                 
                 const submitBtn = document.getElementById('submitBtn');
@@ -1398,8 +1404,10 @@
                 submitBtn.innerHTML = '<span class="loading"></span> Guardando...';
                 
                 try {
+                    // Subir imágenes primero
                     const imageUrls = await this.uploadImages();
                     
+                    // Si estamos editando, mantener las imágenes anteriores
                     let finalImages = imageUrls;
                     if (this.editingId) {
                         const existing = this.pedidos.find(p => p.id === this.editingId);
@@ -1439,11 +1447,13 @@
                     
                     this.showNotification(this.editingId ? '¡Pedido actualizado! 🎂' : '¡Pedido guardado! 🧁');
                     
+                    // Limpiar formulario
                     e.target.reset();
                     document.getElementById('imagePreview').innerHTML = '';
                     this.tempImages = [];
                     this.editingId = null;
                     
+                    // Recargar datos
                     await this.loadPedidos();
                     
                 } catch (error) {
@@ -1453,6 +1463,8 @@
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span>💾</span> Guardar Pedido';
                 }
+                
+                return false; // Prevenir envío normal del formulario
             },
 
             renderPedidos: function(pedidosToRender = this.pedidos) {
@@ -1516,7 +1528,6 @@
                 `).join('');
             },
 
-            // CALENDARIO MEJORADO CON BADGES
             renderCalendar: function() {
                 const year = this.currentMonth.getFullYear();
                 const month = this.currentMonth.getMonth();
@@ -1539,7 +1550,6 @@
                     calendar.appendChild(div);
                 });
                 
-                // Días del mes anterior
                 for (let i = firstDay - 1; i >= 0; i--) {
                     const div = document.createElement('div');
                     div.className = 'calendar-day other-month';
@@ -1547,7 +1557,6 @@
                     calendar.appendChild(div);
                 }
                 
-                // Días del mes actual
                 const today = new Date();
                 for (let day = 1; day <= daysInMonth; day++) {
                     const div = document.createElement('div');
@@ -1559,11 +1568,9 @@
                         div.classList.add('today');
                     }
                     
-                    // CONTAR PEDIDOS PARA ESTE DÍA
                     const dayPedidos = this.pedidos.filter(p => p.fecha_entrega === dateStr);
                     const pedidosCount = dayPedidos.length;
                     
-                    // CREAR BADGE SI HAY PEDIDOS
                     let badgeHtml = '';
                     if (pedidosCount > 0) {
                         let badgeClass = 'badge-low';
@@ -1573,13 +1580,11 @@
                         badgeHtml = `<div class="calendar-badge ${badgeClass}">${pedidosCount}</div>`;
                     }
                     
-                    // EVENTOS (máximo 2 para no saturar)
                     let eventsHtml = '';
                     dayPedidos.slice(0, 2).forEach(p => {
                         eventsHtml += `<div class="calendar-event" onclick="event.stopPropagation(); app.viewPedido(${p.id})">${p.cliente}</div>`;
                     });
                     
-                    // Si hay más de 2, mostrar "+X más"
                     if (pedidosCount > 2) {
                         eventsHtml += `<div style="font-size: 0.7rem; color: var(--text-light); text-align: center; margin-top: 4px;">+${pedidosCount - 2} más</div>`;
                     }
@@ -1601,7 +1606,6 @@
                     calendar.appendChild(div);
                 }
                 
-                // Días del mes siguiente
                 const remainingCells = 42 - (firstDay + daysInMonth);
                 for (let i = 1; i <= remainingCells; i++) {
                     const div = document.createElement('div');
