@@ -1232,7 +1232,8 @@
                     const { data, error } = await this.supabaseClient
                         .from('pedidos')
                         .select('*')
-                        .order('fecha_entrega', { ascending: true });
+                        .order('fecha_entrega', { ascending: true })
+                        .order('hora_entrega', { ascending: true, nullsFirst: false });
                     
                     if (error) throw error;
                     
@@ -1248,8 +1249,9 @@
             },
 
             checkNotifications: function() {
-                const today = new Date().toISOString().split('T')[0];
-                const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+                // CORRECCIÓN 1: Usar la fecha local sin conversión a UTC para evitar problemas de zona horaria
+                const today = this.getLocalDateString(new Date());
+                const tomorrow = this.getLocalDateString(new Date(Date.now() + 86400000));
                 
                 const pedidosHoy = this.pedidos.filter(p => p.fecha_entrega === today && p.estado !== 'entregado');
                 const pedidosManana = this.pedidos.filter(p => p.fecha_entrega === tomorrow && p.estado !== 'entregado');
@@ -1530,7 +1532,8 @@
                     const div = document.createElement('div');
                     div.className = 'calendar-day';
                     
-                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    // CORRECCIÓN 2: Crear la fecha correctamente sin problemas de zona horaria
+                    const dateStr = this.getLocalDateString(new Date(year, month, day));
                     
                     if (today.getDate() === day && today.getMonth() === month && today.getFullYear() === year) {
                         div.classList.add('today');
@@ -1563,7 +1566,7 @@
                         ${eventsHtml}
                     `;
                     
-                    // CORRECCIÓN: Usar filterByDate en lugar de filterPedidos
+                    // CORRECCIÓN 3: Pasar la fecha específica al hacer clic
                     div.onclick = () => {
                         if (dayPedidos.length > 0) {
                             this.filterByDate(dateStr);
@@ -1582,10 +1585,19 @@
                 }
             },
 
-            // NUEVA FUNCIÓN: Filtrar por fecha específica desde el calendario
+            // CORRECCIÓN 4: Nueva función auxiliar para obtener fecha local en formato YYYY-MM-DD
+            getLocalDateString: function(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            },
+
+            // CORRECCIÓN 5: Filtrar por fecha específica desde el calendario
             filterByDate: function(dateStr) {
                 this.showSection('lista', document.querySelectorAll('.nav-btn')[1]);
                 
+                // Esperar a que la sección de lista se renderice
                 setTimeout(() => {
                     const filterFecha = document.getElementById('filterFecha');
                     const searchInput = document.getElementById('searchInput');
@@ -1598,7 +1610,7 @@
                     // Aplicar filtro manualmente
                     let filtered = this.pedidos.filter(p => p.fecha_entrega === dateStr);
                     this.renderPedidos(filtered);
-                }, 50);
+                }, 100);
             },
 
             changeMonth: function(delta) {
@@ -1843,17 +1855,19 @@
                 }, 2000);
             },
 
-            // CORRECCIÓN: Función formatDate corregida para evitar problemas de zona horaria
+            // CORRECCIÓN 6: Función formatDate corregida para evitar problemas de zona horaria
             formatDate: function(dateStr) {
-                // Crear fecha a partir del string YYYY-MM-DD
-                // Añadimos T12:00:00 para que sea mediodía y evitar cambios de día por zona horaria
-                const date = new Date(dateStr + 'T12:00:00');
+                // Extraer año, mes y día directamente del string YYYY-MM-DD
+                // sin crear un objeto Date que cause problemas de zona horaria
+                const [year, month, day] = dateStr.split('-').map(Number);
+                
+                // Crear fecha usando componentes locales (mes - 1 porque en JS los meses son 0-11)
+                const date = new Date(year, month - 1, day);
                 
                 return date.toLocaleDateString('es-ES', { 
                     day: 'numeric', 
                     month: 'short', 
                     year: 'numeric'
-                    // NO especificamos timeZone, así que usa la del dispositivo automáticamente
                 });
             },
 
