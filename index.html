@@ -355,6 +355,7 @@
             justify-content: center;
             transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 10;
         }
 
         .remove-image:hover {
@@ -1145,6 +1146,7 @@
             editingId: null,
             tempImages: [],
             isOnline: false,
+            existingImages: [], // Nueva propiedad para rastrear imágenes existentes durante edición
 
             init: function() {
                 const savedUrl = localStorage.getItem('supabaseUrl');
@@ -1156,11 +1158,24 @@
                     document.getElementById('configSection').style.display = 'block';
                 }
                 
-                document.getElementById('fechaEntrega').min = new Date().toISOString().split('T')[0];
+                // Solo establecer min en modo creación (no edición)
+                this.setDateMinAttribute();
                 
                 const form = document.getElementById('pedidoForm');
                 if (form) {
                     form.onsubmit = (e) => this.handleSubmit(e);
+                }
+            },
+
+            // Nueva función para manejar el atributo min de fecha
+            setDateMinAttribute: function() {
+                const fechaInput = document.getElementById('fechaEntrega');
+                if (this.editingId) {
+                    // En modo edición: remover restricción de fecha mínima
+                    fechaInput.removeAttribute('min');
+                } else {
+                    // En modo creación: establecer fecha mínima como hoy
+                    fechaInput.min = new Date().toISOString().split('T')[0];
                 }
             },
 
@@ -1249,7 +1264,6 @@
             },
 
             checkNotifications: function() {
-                // CORRECCIÓN 1: Usar la fecha local sin conversión a UTC para evitar problemas de zona horaria
                 const today = this.getLocalDateString(new Date());
                 const tomorrow = this.getLocalDateString(new Date(Date.now() + 86400000));
                 
@@ -1320,7 +1334,8 @@
                         reader.onload = (e) => {
                             this.tempImages.push({
                                 file: file,
-                                preview: e.target.result
+                                preview: e.target.result,
+                                isNew: true // Marcar como nueva imagen
                             });
                             
                             const div = document.createElement('div');
@@ -1338,6 +1353,13 @@
 
             removeTempImage: function(btn) {
                 const index = Array.from(btn.parentElement.parentElement.children).indexOf(btn.parentElement);
+                const removedImage = this.tempImages[index];
+                
+                // Si es una imagen existente (de edición), marcarla para eliminación
+                if (removedImage && !removedImage.isNew && removedImage.url) {
+                    this.existingImages = this.existingImages.filter(url => url !== removedImage.url);
+                }
+                
                 this.tempImages.splice(index, 1);
                 btn.parentElement.remove();
             },
@@ -1364,6 +1386,9 @@
                             .getPublicUrl(fileName);
                         
                         uploadedUrls.push(publicUrl);
+                    } else if (img.url) {
+                        // Mantener imágenes existentes que no fueron eliminadas
+                        uploadedUrls.push(img.url);
                     }
                 }
                 
@@ -1380,13 +1405,8 @@
                 try {
                     const imageUrls = await this.uploadImages();
                     
-                    let finalImages = imageUrls;
-                    if (this.editingId) {
-                        const existing = this.pedidos.find(p => p.id === this.editingId);
-                        if (existing && existing.imagenes) {
-                            finalImages = [...existing.imagenes, ...imageUrls];
-                        }
-                    }
+                    // Combinar imágenes existentes que no fueron eliminadas con las nuevas
+                    let finalImages = [...this.existingImages, ...imageUrls];
                     
                     const pedidoData = {
                         cliente: document.getElementById('cliente').value,
@@ -1422,7 +1442,11 @@
                     e.target.reset();
                     document.getElementById('imagePreview').innerHTML = '';
                     this.tempImages = [];
+                    this.existingImages = []; // Limpiar imágenes existentes
                     this.editingId = null;
+                    
+                    // Restaurar restricción de fecha mínima para nuevos pedidos
+                    this.setDateMinAttribute();
                     
                     await this.loadPedidos();
                     
@@ -1532,7 +1556,6 @@
                     const div = document.createElement('div');
                     div.className = 'calendar-day';
                     
-                    // CORRECCIÓN 2: Crear la fecha correctamente sin problemas de zona horaria
                     const dateStr = this.getLocalDateString(new Date(year, month, day));
                     
                     if (today.getDate() === day && today.getMonth() === month && today.getFullYear() === year) {
@@ -1566,7 +1589,6 @@
                         ${eventsHtml}
                     `;
                     
-                    // CORRECCIÓN 3: Pasar la fecha específica al hacer clic
                     div.onclick = () => {
                         if (dayPedidos.length > 0) {
                             this.filterByDate(dateStr);
@@ -1585,7 +1607,6 @@
                 }
             },
 
-            // CORRECCIÓN 4: Nueva función auxiliar para obtener fecha local en formato YYYY-MM-DD
             getLocalDateString: function(date) {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1593,11 +1614,9 @@
                 return `${year}-${month}-${day}`;
             },
 
-            // CORRECCIÓN 5: Filtrar por fecha específica desde el calendario
             filterByDate: function(dateStr) {
                 this.showSection('lista', document.querySelectorAll('.nav-btn')[1]);
                 
-                // Esperar a que la sección de lista se renderice
                 setTimeout(() => {
                     const filterFecha = document.getElementById('filterFecha');
                     const searchInput = document.getElementById('searchInput');
@@ -1607,7 +1626,6 @@
                     if (searchInput) searchInput.value = '';
                     if (filterEstado) filterEstado.value = '';
                     
-                    // Aplicar filtro manualmente
                     let filtered = this.pedidos.filter(p => p.fecha_entrega === dateStr);
                     this.renderPedidos(filtered);
                 }, 100);
@@ -1754,6 +1772,9 @@
                 
                 this.editingId = id;
                 
+                // Establecer modo edición (sin restricción de fecha mínima)
+                this.setDateMinAttribute();
+                
                 document.getElementById('cliente').value = p.cliente;
                 document.getElementById('telefono').value = p.telefono;
                 document.getElementById('tipoProducto').value = p.tipo_producto;
@@ -1766,20 +1787,34 @@
                 document.getElementById('descripcion').value = p.descripcion;
                 document.getElementById('notas').value = p.notas || '';
                 
+                // Preparar imágenes existentes para edición
                 this.tempImages = [];
+                this.existingImages = p.imagenes ? [...p.imagenes] : [];
                 const preview = document.getElementById('imagePreview');
                 preview.innerHTML = '';
                 
-                if (p.imagenes) {
+                if (p.imagenes && p.imagenes.length > 0) {
                     p.imagenes.forEach(img => {
+                        // Agregar a tempImages como imagen existente
+                        this.tempImages.push({
+                            url: img,
+                            preview: img,
+                            isNew: false
+                        });
+                        
                         const div = document.createElement('div');
                         div.className = 'image-preview-item';
                         div.innerHTML = `
                             <img src="${img}" onclick="app.showImageModal('${img}')">
+                            <button type="button" class="remove-image" onclick="app.removeTempImage(this)" title="Eliminar imagen">×</button>
                         `;
                         preview.appendChild(div);
                     });
                 }
+                
+                // Cambiar texto del botón de submit
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.innerHTML = '<span>💾</span> Actualizar Pedido';
                 
                 this.showSection('nuevo', document.querySelectorAll('.nav-btn')[0]);
                 window.scrollTo(0, 0);
@@ -1818,7 +1853,7 @@
                         <div class="stat-label">Total Pedidos</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" style="color: #f39c12;">${stats.pendiente}</div>
+                        div class="stat-number" style="color: #f39c12;">${stats.pendiente}</div>
                         <div class="stat-label">Pendientes</div>
                     </div>
                     <div class="stat-card">
@@ -1855,13 +1890,8 @@
                 }, 2000);
             },
 
-            // CORRECCIÓN 6: Función formatDate corregida para evitar problemas de zona horaria
             formatDate: function(dateStr) {
-                // Extraer año, mes y día directamente del string YYYY-MM-DD
-                // sin crear un objeto Date que cause problemas de zona horaria
                 const [year, month, day] = dateStr.split('-').map(Number);
-                
-                // Crear fecha usando componentes locales (mes - 1 porque en JS los meses son 0-11)
                 const date = new Date(year, month - 1, day);
                 
                 return date.toLocaleDateString('es-ES', { 
