@@ -537,8 +537,10 @@
             letter-spacing: 0.5px;
         }
 
+        /* NUEVOS ESTADOS ACTUALIZADOS */
         .status-pendiente { background: #fff3cd; color: #856404; }
-        .status-proceso { background: #d1ecf1; color: #0c5460; }
+        .status-horneado { background: #ffeaa7; color: #6c5b0f; }
+        .status-ensamblado { background: #d1ecf1; color: #0c5460; }
         .status-listo { background: #e2d4f0; color: #5a2d6c; }
         .status-entregado { background: #d4edda; color: #155724; }
         .status-cancelado { background: #f8d7da; color: #721c24; }
@@ -802,10 +804,13 @@
             box-shadow: var(--shadow-hover);
         }
 
+        .stat-card:nth-child(1) { border-top-color: #e8927c; }
         .stat-card:nth-child(2) { border-top-color: #f39c12; }
-        .stat-card:nth-child(3) { border-top-color: #3498db; }
-        .stat-card:nth-child(4) { border-top-color: #9b59b6; }
-        .stat-card:nth-child(5) { border-top-color: #27ae60; }
+        .stat-card:nth-child(3) { border-top-color: #f1c40f; }
+        .stat-card:nth-child(4) { border-top-color: #3498db; }
+        .stat-card:nth-child(5) { border-top-color: #9b59b6; }
+        .stat-card:nth-child(6) { border-top-color: #27ae60; }
+        .stat-card:nth-child(7) { border-top-color: #e74c3c; }
 
         .stat-number {
             font-size: 2rem;
@@ -1005,7 +1010,8 @@
                                 <label for="estado">Estado del Pedido</label>
                                 <select id="estado">
                                     <option value="pendiente">🟡 Pendiente</option>
-                                    <option value="proceso">🔵 En Proceso</option>
+                                    <option value="horneado">🟠 Horneado</option>
+                                    <option value="ensamblado">🔵 Ensamblado</option>
                                     <option value="listo">🟣 Listo</option>
                                     <option value="entregado">🟢 Entregado</option>
                                     <option value="cancelado">🔴 Cancelado</option>
@@ -1057,7 +1063,8 @@
                         <select id="filterEstado" onchange="app.filterPedidos()" style="width: auto; min-width: 160px;">
                             <option value="">Todos los estados</option>
                             <option value="pendiente">🟡 Pendiente</option>
-                            <option value="proceso">🔵 En Proceso</option>
+                            <option value="horneado">🟠 Horneado</option>
+                            <option value="ensamblado">🔵 Ensamblado</option>
                             <option value="listo">🟣 Listo</option>
                             <option value="entregado">🟢 Entregado</option>
                             <option value="cancelado">🔴 Cancelado</option>
@@ -1146,7 +1153,7 @@
             editingId: null,
             tempImages: [],
             isOnline: false,
-            existingImages: [], // Nueva propiedad para rastrear imágenes existentes durante edición
+            existingImages: [],
 
             init: function() {
                 const savedUrl = localStorage.getItem('supabaseUrl');
@@ -1158,7 +1165,6 @@
                     document.getElementById('configSection').style.display = 'block';
                 }
                 
-                // Solo establecer min en modo creación (no edición)
                 this.setDateMinAttribute();
                 
                 const form = document.getElementById('pedidoForm');
@@ -1167,14 +1173,11 @@
                 }
             },
 
-            // Nueva función para manejar el atributo min de fecha
             setDateMinAttribute: function() {
                 const fechaInput = document.getElementById('fechaEntrega');
                 if (this.editingId) {
-                    // En modo edición: remover restricción de fecha mínima
                     fechaInput.removeAttribute('min');
                 } else {
-                    // En modo creación: establecer fecha mínima como hoy
                     fechaInput.min = new Date().toISOString().split('T')[0];
                 }
             },
@@ -1330,12 +1333,22 @@
                 
                 if (input.files && input.files.length > 0) {
                     Array.from(input.files).forEach(file => {
+                        // Verificar si la imagen ya existe (por nombre y tamaño)
+                        const exists = this.tempImages.some(img => 
+                            img.file && img.file.name === file.name && img.file.size === file.size
+                        );
+                        
+                        if (exists) {
+                            this.showNotification('Esta imagen ya fue agregada', 'error');
+                            return;
+                        }
+
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             this.tempImages.push({
                                 file: file,
                                 preview: e.target.result,
-                                isNew: true // Marcar como nueva imagen
+                                isNew: true
                             });
                             
                             const div = document.createElement('div');
@@ -1349,13 +1362,14 @@
                         reader.readAsDataURL(file);
                     });
                 }
+                // Limpiar input para permitir seleccionar la misma imagen si se eliminó
+                input.value = '';
             },
 
             removeTempImage: function(btn) {
                 const index = Array.from(btn.parentElement.parentElement.children).indexOf(btn.parentElement);
                 const removedImage = this.tempImages[index];
                 
-                // Si es una imagen existente (de edición), marcarla para eliminación
                 if (removedImage && !removedImage.isNew && removedImage.url) {
                     this.existingImages = this.existingImages.filter(url => url !== removedImage.url);
                 }
@@ -1368,7 +1382,8 @@
                 const uploadedUrls = [];
                 
                 for (const img of this.tempImages) {
-                    if (img.file) {
+                    // Solo subir imágenes nuevas (con file)
+                    if (img.isNew && img.file) {
                         const fileName = `${Date.now()}_${img.file.name}`;
                         const { data, error } = await this.supabaseClient
                             .storage
@@ -1386,8 +1401,8 @@
                             .getPublicUrl(fileName);
                         
                         uploadedUrls.push(publicUrl);
-                    } else if (img.url) {
-                        // Mantener imágenes existentes que no fueron eliminadas
+                    } else if (img.url && !img.isNew) {
+                        // Mantener URLs de imágenes existentes que no fueron eliminadas
                         uploadedUrls.push(img.url);
                     }
                 }
@@ -1403,10 +1418,12 @@
                 submitBtn.innerHTML = '<span class="loading"></span> Guardando...';
                 
                 try {
-                    const imageUrls = await this.uploadImages();
+                    // Subir solo imágenes nuevas
+                    const newImageUrls = await this.uploadImages();
                     
-                    // Combinar imágenes existentes que no fueron eliminadas con las nuevas
-                    let finalImages = [...this.existingImages, ...imageUrls];
+                    // Combinar: imágenes existentes que quedaron + nuevas subidas
+                    // Filtrar duplicados por si acaso
+                    const allImages = [...new Set([...this.existingImages, ...newImageUrls])];
                     
                     const pedidoData = {
                         cliente: document.getElementById('cliente').value,
@@ -1420,7 +1437,7 @@
                         direccion: document.getElementById('direccion').value || null,
                         descripcion: document.getElementById('descripcion').value,
                         notas: document.getElementById('notas').value || null,
-                        imagenes: finalImages
+                        imagenes: allImages
                     };
                     
                     let result;
@@ -1439,15 +1456,7 @@
                     
                     this.showNotification(this.editingId ? '¡Pedido actualizado! 🎂' : '¡Pedido guardado! 🧁');
                     
-                    e.target.reset();
-                    document.getElementById('imagePreview').innerHTML = '';
-                    this.tempImages = [];
-                    this.existingImages = []; // Limpiar imágenes existentes
-                    this.editingId = null;
-                    
-                    // Restaurar restricción de fecha mínima para nuevos pedidos
-                    this.setDateMinAttribute();
-                    
+                    this.resetForm();
                     await this.loadPedidos();
                     
                 } catch (error) {
@@ -1459,6 +1468,18 @@
                 }
                 
                 return false;
+            },
+
+            resetForm: function() {
+                document.getElementById('pedidoForm').reset();
+                document.getElementById('imagePreview').innerHTML = '';
+                this.tempImages = [];
+                this.existingImages = [];
+                this.editingId = null;
+                this.setDateMinAttribute();
+                
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.innerHTML = '<span>💾</span> Guardar Pedido';
             },
 
             renderPedidos: function(pedidosToRender = this.pedidos) {
@@ -1771,8 +1792,6 @@
                 if (!p) return;
                 
                 this.editingId = id;
-                
-                // Establecer modo edición (sin restricción de fecha mínima)
                 this.setDateMinAttribute();
                 
                 document.getElementById('cliente').value = p.cliente;
@@ -1795,7 +1814,6 @@
                 
                 if (p.imagenes && p.imagenes.length > 0) {
                     p.imagenes.forEach(img => {
-                        // Agregar a tempImages como imagen existente
                         this.tempImages.push({
                             url: img,
                             preview: img,
@@ -1812,7 +1830,6 @@
                     });
                 }
                 
-                // Cambiar texto del botón de submit
                 const submitBtn = document.getElementById('submitBtn');
                 submitBtn.innerHTML = '<span>💾</span> Actualizar Pedido';
                 
@@ -1842,23 +1859,30 @@
                 const stats = {
                     total: this.pedidos.length,
                     pendiente: this.pedidos.filter(p => p.estado === 'pendiente').length,
-                    proceso: this.pedidos.filter(p => p.estado === 'proceso').length,
+                    horneado: this.pedidos.filter(p => p.estado === 'horneado').length,
+                    ensamblado: this.pedidos.filter(p => p.estado === 'ensamblado').length,
                     listo: this.pedidos.filter(p => p.estado === 'listo').length,
-                    entregado: this.pedidos.filter(p => p.estado === 'entregado').length
+                    entregado: this.pedidos.filter(p => p.estado === 'entregado').length,
+                    cancelado: this.pedidos.filter(p => p.estado === 'cancelado').length
                 };
                 
+                // ✅ CORREGIDO: Se agregó el "<" faltante en el div de Pendientes
                 document.getElementById('statsContainer').innerHTML = `
                     <div class="stat-card">
-                        <div class="stat-number">${stats.total}</div>
+                        <div class="stat-number" style="color: #e8927c;">${stats.total}</div>
                         <div class="stat-label">Total Pedidos</div>
                     </div>
                     <div class="stat-card">
-                        div class="stat-number" style="color: #f39c12;">${stats.pendiente}</div>
+                        <div class="stat-number" style="color: #f39c12;">${stats.pendiente}</div>
                         <div class="stat-label">Pendientes</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" style="color: #3498db;">${stats.proceso}</div>
-                        <div class="stat-label">En Proceso</div>
+                        <div class="stat-number" style="color: #e67e22;">${stats.horneado}</div>
+                        <div class="stat-label">Horneados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #3498db;">${stats.ensamblado}</div>
+                        <div class="stat-label">Ensamblados</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number" style="color: #9b59b6;">${stats.listo}</div>
@@ -1867,6 +1891,10 @@
                     <div class="stat-card">
                         <div class="stat-number" style="color: #27ae60;">${stats.entregado}</div>
                         <div class="stat-label">Entregados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #e74c3c;">${stats.cancelado}</div>
+                        <div class="stat-label">Cancelados</div>
                     </div>
                 `;
             },
@@ -1904,7 +1932,8 @@
             formatEstado: function(estado) {
                 const estados = {
                     'pendiente': '🟡 Pendiente',
-                    'proceso': '🔵 En Proceso',
+                    'horneado': '🟠 Horneado',
+                    'ensamblado': '🔵 Ensamblado',
                     'listo': '🟣 Listo',
                     'entregado': '🟢 Entregado',
                     'cancelado': '🔴 Cancelado'
