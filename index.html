@@ -1611,9 +1611,8 @@
                     `;
                     
                     div.onclick = () => {
-                        if (dayPedidos.length > 0) {
-                            this.filterByDate(dateStr);
-                        }
+                        // Siempre permitir clic, incluso si no hay pedidos visibles (por si hay que cargar)
+                        this.filterByDate(dateStr);
                     };
                     
                     calendar.appendChild(div);
@@ -1629,29 +1628,45 @@
             },
 
             getLocalDateString: function(date) {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
+                // Usar UTC para evitar problemas de zona horaria
+                const year = date.getUTCFullYear();
+                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(date.getUTCDate()).padStart(2, '0');
                 return `${year}-${month}-${day}`;
             },
 
             filterByDate: function(dateStr) {
                 this.showSection('lista', document.querySelectorAll('.nav-btn')[1]);
                 
-                setTimeout(() => {
+                // Forzar recarga de pedidos antes de filtrar para asegurar datos frescos
+                setTimeout(async () => {
                     const filterFecha = document.getElementById('filterFecha');
                     const searchInput = document.getElementById('searchInput');
                     const filterEstado = document.getElementById('filterEstado');
                     
-                    if (filterFecha) filterFecha.value = dateStr;
+                    // Limpiar filtros primero
                     if (searchInput) searchInput.value = '';
                     if (filterEstado) filterEstado.value = '';
                     
+                    // Establecer la fecha
+                    if (filterFecha) filterFecha.value = dateStr;
+                    
+                    // Recargar pedidos y luego filtrar para asegurar sincronización
+                    await this.loadPedidos();
+                    
+                    // Ahora filtrar específicamente por la fecha
                     let filtered = this.pedidos.filter(p => p.fecha_entrega === dateStr);
                     this.renderPedidos(filtered);
-                }, 100);
+                    
+                    // Mostrar notificación de cuántos pedidos hay
+                    if (filtered.length === 0) {
+                        this.showNotification(`No hay pedidos para el ${dateStr}`, 'error');
+                    } else {
+                        this.showNotification(`${filtered.length} pedido(s) encontrado(s) para el ${dateStr}`);
+                    }
+                }, 150);
             },
-
+            
             changeMonth: function(delta) {
                 this.currentMonth.setMonth(this.currentMonth.getMonth() + delta);
                 this.renderCalendar();
