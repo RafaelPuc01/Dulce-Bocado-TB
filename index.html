@@ -1267,12 +1267,17 @@
             },
 
             checkNotifications: function() {
-                const today = this.getLocalDateString(new Date());
-                const tomorrow = this.getLocalDateString(new Date(Date.now() + 86400000));
+                // Crear fecha base al mediodía para evitar problemas de zona horaria
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+                const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0, 0);
                 
-                const pedidosHoy = this.pedidos.filter(p => p.fecha_entrega === today && p.estado !== 'entregado');
-                const pedidosManana = this.pedidos.filter(p => p.fecha_entrega === tomorrow && p.estado !== 'entregado');
-                const pedidosUrgentes = this.pedidos.filter(p => p.estado === 'listo' && p.fecha_entrega <= today);
+                const todayStr = this.getLocalDateString(today);
+                const tomorrowStr = this.getLocalDateString(tomorrow);
+                
+                const pedidosHoy = this.pedidos.filter(p => p.fecha_entrega === todayStr && p.estado !== 'entregado');
+                const pedidosManana = this.pedidos.filter(p => p.fecha_entrega === tomorrowStr && p.estado !== 'entregado');
+                const pedidosUrgentes = this.pedidos.filter(p => p.estado === 'listo' && p.fecha_entrega <= todayStr);
                 
                 const notificationsList = document.getElementById('notificationsList');
                 const panel = document.getElementById('notificationsPanel');
@@ -1301,7 +1306,6 @@
                     panel.classList.remove('show');
                 }
             },
-
             createNotificationItem: function(icon, title, meta, type) {
                 return `
                     <div class="notification-item">
