@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🧁 Dulce Bocado TB - Agenda</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
@@ -537,7 +537,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* NUEVOS ESTADOS ACTUALIZADOS */
         .status-pendiente { background: #fff3cd; color: #856404; }
         .status-horneado { background: #ffeaa7; color: #6c5b0f; }
         .status-ensamblado { background: #d1ecf1; color: #0c5460; }
@@ -1154,6 +1153,7 @@
             tempImages: [],
             isOnline: false,
             existingImages: [],
+            isLoading: false, // NUEVO: Prevenir llamadas simultáneas
 
             init: function() {
                 const savedUrl = localStorage.getItem('supabaseUrl');
@@ -1246,6 +1246,10 @@
             },
 
             loadPedidos: async function() {
+                // NUEVO: Prevenir múltiples llamadas simultáneas que causan bucles en iOS
+                if (this.isLoading) return;
+                this.isLoading = true;
+                
                 try {
                     const { data, error } = await this.supabaseClient
                         .from('pedidos')
@@ -1263,14 +1267,16 @@
                 } catch (error) {
                     console.error('Error cargando pedidos:', error);
                     this.showNotification('Error al cargar pedidos', 'error');
+                } finally {
+                    this.isLoading = false;
                 }
             },
 
             checkNotifications: function() {
-                // Crear fecha base al mediodía para evitar problemas de zona horaria
+                // CORREGIDO: Usar fecha simple sin hora para evitar problemas de zona horaria en iOS
                 const now = new Date();
-                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-                const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0, 0);
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
                 
                 const todayStr = this.getLocalDateString(today);
                 const tomorrowStr = this.getLocalDateString(tomorrow);
@@ -1306,6 +1312,7 @@
                     panel.classList.remove('show');
                 }
             },
+            
             createNotificationItem: function(icon, title, meta, type) {
                 return `
                     <div class="notification-item">
@@ -1325,9 +1332,9 @@
                 document.getElementById(section).classList.add('active');
                 if (btn) btn.classList.add('active');
                 
-                if (section === 'lista') {
-                    this.loadPedidos();
-                } else if (section === 'calendario') {
+                // CORREGIDO: No recargar pedidos automáticamente al cambiar de sección
+                // para evitar bucles infinitos en iOS Safari
+                if (section === 'calendario') {
                     this.renderCalendar();
                 }
             },
@@ -1337,7 +1344,6 @@
                 
                 if (input.files && input.files.length > 0) {
                     Array.from(input.files).forEach(file => {
-                        // Verificar si la imagen ya existe (por nombre y tamaño)
                         const exists = this.tempImages.some(img => 
                             img.file && img.file.name === file.name && img.file.size === file.size
                         );
@@ -1366,7 +1372,6 @@
                         reader.readAsDataURL(file);
                     });
                 }
-                // Limpiar input para permitir seleccionar la misma imagen si se eliminó
                 input.value = '';
             },
 
@@ -1386,7 +1391,6 @@
                 const uploadedUrls = [];
                 
                 for (const img of this.tempImages) {
-                    // Solo subir imágenes nuevas (con file)
                     if (img.isNew && img.file) {
                         const fileName = `${Date.now()}_${img.file.name}`;
                         const { data, error } = await this.supabaseClient
@@ -1406,7 +1410,6 @@
                         
                         uploadedUrls.push(publicUrl);
                     } else if (img.url && !img.isNew) {
-                        // Mantener URLs de imágenes existentes que no fueron eliminadas
                         uploadedUrls.push(img.url);
                     }
                 }
@@ -1422,11 +1425,7 @@
                 submitBtn.innerHTML = '<span class="loading"></span> Guardando...';
                 
                 try {
-                    // Subir solo imágenes nuevas
                     const newImageUrls = await this.uploadImages();
-                    
-                    // Combinar: imágenes existentes que quedaron + nuevas subidas
-                    // Filtrar duplicados por si acaso
                     const allImages = [...new Set([...this.existingImages, ...newImageUrls])];
                     
                     const pedidoData = {
@@ -1576,15 +1575,19 @@
                     calendar.appendChild(div);
                 }
                 
+                // CORREGIDO: Usar fecha base sin hora para evitar problemas de zona horaria en iOS
                 const today = new Date();
+                const todayStr = this.getLocalDateString(today);
+                
                 for (let day = 1; day <= daysInMonth; day++) {
                     const div = document.createElement('div');
                     div.className = 'calendar-day';
                     
-                    // Crear fecha a mediodía para evitar problemas de cambio de día por zona horaria
-                    const dateStr = this.getLocalDateString(new Date(year, month, day, 12, 0, 0));
+                    // Crear fecha usando componentes individuales para iOS
+                    const dateStr = this.getLocalDateString(new Date(year, month, day));
                     
-                    if (today.getDate() === day && today.getMonth() === month && today.getFullYear() === year) {
+                    // Comparar strings de fecha en lugar de objetos Date
+                    if (todayStr === dateStr) {
                         div.classList.add('today');
                     }
                     
@@ -1616,7 +1619,6 @@
                     `;
                     
                     div.onclick = () => {
-                        // Siempre permitir clic, incluso si no hay pedidos visibles (por si hay que cargar)
                         this.filterByDate(dateStr);
                     };
                     
@@ -1632,45 +1634,38 @@
                 }
             },
 
+            // CORREGIDO: Función simplificada para evitar problemas de zona horaria en iOS
             getLocalDateString: function(date) {
-                // Crear fecha usando componentes locales para evitar zona horaria
-                // Esto fuerza a que sea medianoche del día seleccionado en hora local de México
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
                 const day = String(date.getDate()).padStart(2, '0');
                 return `${year}-${month}-${day}`;
             },
 
+            // CORREGIDO: Simplificar filterByDate para evitar recursión infinita
             filterByDate: function(dateStr) {
                 this.showSection('lista', document.querySelectorAll('.nav-btn')[1]);
                 
-                // Forzar recarga de pedidos antes de filtrar para asegurar datos frescos
-                setTimeout(async () => {
+                // Usar setTimeout para evitar bloqueo del hilo principal en iOS
+                setTimeout(() => {
                     const filterFecha = document.getElementById('filterFecha');
                     const searchInput = document.getElementById('searchInput');
                     const filterEstado = document.getElementById('filterEstado');
                     
-                    // Limpiar filtros primero
                     if (searchInput) searchInput.value = '';
                     if (filterEstado) filterEstado.value = '';
-                    
-                    // Establecer la fecha
                     if (filterFecha) filterFecha.value = dateStr;
                     
-                    // Recargar pedidos y luego filtrar para asegurar sincronización
-                    await this.loadPedidos();
-                    
-                    // Ahora filtrar específicamente por la fecha
+                    // Filtrar directamente sin recargar desde servidor
                     let filtered = this.pedidos.filter(p => p.fecha_entrega === dateStr);
                     this.renderPedidos(filtered);
                     
-                    // Mostrar notificación de cuántos pedidos hay
                     if (filtered.length === 0) {
                         this.showNotification(`No hay pedidos para el ${dateStr}`, 'error');
                     } else {
                         this.showNotification(`${filtered.length} pedido(s) encontrado(s) para el ${dateStr}`);
                     }
-                }, 150);
+                }, 100);
             },
             
             changeMonth: function(delta) {
@@ -1827,7 +1822,6 @@
                 document.getElementById('descripcion').value = p.descripcion;
                 document.getElementById('notas').value = p.notas || '';
                 
-                // Preparar imágenes existentes para edición
                 this.tempImages = [];
                 this.existingImages = p.imagenes ? [...p.imagenes] : [];
                 const preview = document.getElementById('imagePreview');
