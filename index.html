@@ -1887,7 +1887,6 @@
                     cancelado: this.pedidos.filter(p => p.estado === 'cancelado').length
                 };
                 
-                // ✅ CORREGIDO: Se agregó el "<" faltante en el div de Pendientes
                 document.getElementById('statsContainer').innerHTML = `
                     <div class="stat-card">
                         <div class="stat-number" style="color: #e8927c;">${stats.total}</div>
