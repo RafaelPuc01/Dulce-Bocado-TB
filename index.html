@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+        <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -892,6 +892,15 @@
             border: 2px solid #f0e6e3;
         }
 
+        .show-more-container {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-light);
+            background: var(--cream);
+            border-radius: var(--radius-sm);
+            margin-top: 10px;
+        }
+
         @media (max-width: 768px) {
             .logo { font-size: 1.8rem; }
             .nav-tabs { padding: 6px; }
@@ -1145,6 +1154,12 @@
     </div>
 
     <script>
+        // Capturar errores globales para debug
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('🚨 ERROR GLOBAL:', message, 'en línea', lineno, error);
+            return false;
+        };
+
         const app = {
             supabaseClient: null,
             pedidos: [],
@@ -1153,7 +1168,8 @@
             tempImages: [],
             isOnline: false,
             existingImages: [],
-            isLoading: false, // NUEVO: Prevenir llamadas simultáneas
+            isLoading: false,
+            isFiltering: false,
 
             init: function() {
                 const savedUrl = localStorage.getItem('supabaseUrl');
@@ -1246,7 +1262,6 @@
             },
 
             loadPedidos: async function() {
-                // NUEVO: Prevenir múltiples llamadas simultáneas que causan bucles en iOS
                 if (this.isLoading) return;
                 this.isLoading = true;
                 
@@ -1273,7 +1288,6 @@
             },
 
             checkNotifications: function() {
-                // CORREGIDO: Usar fecha simple sin hora para evitar problemas de zona horaria en iOS
                 const now = new Date();
                 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                 const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -1332,8 +1346,6 @@
                 document.getElementById(section).classList.add('active');
                 if (btn) btn.classList.add('active');
                 
-                // CORREGIDO: No recargar pedidos automáticamente al cambiar de sección
-                // para evitar bucles infinitos en iOS Safari
                 if (section === 'calendario') {
                     this.renderCalendar();
                 }
@@ -1499,7 +1511,12 @@
                     return;
                 }
 
-                container.innerHTML = pedidosToRender.map(p => `
+                // LÍMITE PARA iOS: Renderizar máximo 30 pedidos inicialmente
+                const maxPedidos = 30;
+                const pedidosLimitados = pedidosToRender.slice(0, maxPedidos);
+                const hayMas = pedidosToRender.length > maxPedidos;
+
+                container.innerHTML = pedidosLimitados.map(p => `
                     <div class="pedido-card">
                         <div class="pedido-header">
                             <div>
@@ -1527,7 +1544,74 @@
 
                         ${p.imagenes && p.imagenes.length > 0 ? `
                             <div class="pedido-images">
-                                ${p.imagenes.map(img => `<img src="${img}" onclick="app.showImageModal('${img}')">`).join('')}
+                                ${p.imagenes.map(img => `<img src="${img}" onclick="app.showImageModal('${img}')" loading="lazy">`).join('')}
+                            </div>
+                        ` : ''}
+
+                        <div class="pedido-actions">
+                            <button class="btn btn-success" onclick="app.editPedido(${p.id})">
+                                <span>✏️</span> Editar
+                            </button>
+                            <button class="btn btn-primary" onclick="app.viewPedido(${p.id})">
+                                <span>👁️</span> Ver Detalles
+                            </button>
+                            <button class="btn btn-danger" onclick="app.confirmDelete(${p.id})">
+                                <span>🗑️</span> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                `).join('') + (hayMas ? `
+                    <div class="show-more-container">
+                        <p>Mostrando ${maxPedidos} de ${pedidosToRender.length} pedidos</p>
+                        <button class="btn btn-secondary" onclick="app.mostrarTodosLosPedidos()" style="margin-top: 10px;">
+                            Mostrar todos los pedidos
+                        </button>
+                    </div>
+                ` : '');
+            },
+
+            mostrarTodosLosPedidos: function() {
+                // Renderizar todos sin límite cuando el usuario lo solicita
+                const container = document.getElementById('pedidosList');
+                const pedidosToRender = this.pedidos; // o el filtro actual si existe
+                
+                // Eliminar el mensaje de "mostrar más"
+                const showMoreDiv = container.querySelector('.show-more-container');
+                if (showMoreDiv) showMoreDiv.remove();
+                
+                // Renderizar el resto de pedidos
+                const maxPedidos = 30;
+                const pedidosRestantes = pedidosToRender.slice(maxPedidos);
+                
+                const htmlRestante = pedidosRestantes.map(p => `
+                    <div class="pedido-card">
+                        <div class="pedido-header">
+                            <div>
+                                <div class="pedido-title">${p.cliente}</div>
+                                <div class="pedido-producto">🧁 ${p.tipo_producto}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="pedido-date">${this.formatDate(p.fecha_entrega)} ${p.hora_entrega || ''}</div>
+                                <span class="status-badge status-${p.estado}">${this.formatEstado(p.estado)}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="pedido-info">
+                            <div>📱 ${p.telefono}</div>
+                            ${p.direccion ? `<div>📍 ${p.direccion}</div>` : ''}
+                            ${p.precio ? `<div>💰 $${parseFloat(p.precio).toFixed(2)}</div>` : ''}
+                            ${p.anticipo ? `<div>💵 Anticipo: $${parseFloat(p.anticipo).toFixed(2)}</div>` : ''}
+                        </div>
+
+                        <div style="margin: 15px 0; color: var(--text); line-height: 1.6;">
+                            <strong style="color: var(--primary-dark);">Descripción:</strong> ${p.descripcion}
+                        </div>
+
+                        ${p.notas ? `<div style="margin: 15px 0; color: var(--text-light); font-style: italic; background: var(--cream); padding: 12px; border-radius: 8px;">📝 ${p.notas}</div>` : ''}
+
+                        ${p.imagenes && p.imagenes.length > 0 ? `
+                            <div class="pedido-images">
+                                ${p.imagenes.map(img => `<img src="${img}" onclick="app.showImageModal('${img}')" loading="lazy">`).join('')}
                             </div>
                         ` : ''}
 
@@ -1544,6 +1628,8 @@
                         </div>
                     </div>
                 `).join('');
+                
+                container.insertAdjacentHTML('beforeend', htmlRestante);
             },
 
             renderCalendar: function() {
@@ -1575,7 +1661,6 @@
                     calendar.appendChild(div);
                 }
                 
-                // CORREGIDO: Usar fecha base sin hora para evitar problemas de zona horaria en iOS
                 const today = new Date();
                 const todayStr = this.getLocalDateString(today);
                 
@@ -1583,16 +1668,24 @@
                     const div = document.createElement('div');
                     div.className = 'calendar-day';
                     
-                    // Crear fecha usando componentes individuales para iOS
                     const dateStr = this.getLocalDateString(new Date(year, month, day));
                     
-                    // Comparar strings de fecha en lugar de objetos Date
                     if (todayStr === dateStr) {
                         div.classList.add('today');
                     }
                     
-                    const dayPedidos = this.pedidos.filter(p => p.fecha_entrega === dateStr);
-                    const pedidosCount = dayPedidos.length;
+                    // Optimización: Contar pedidos solo una vez por día
+                    let pedidosCount = 0;
+                    const dayPedidos = [];
+                    
+                    for (let i = 0; i < this.pedidos.length; i++) {
+                        if (this.pedidos[i].fecha_entrega === dateStr) {
+                            pedidosCount++;
+                            if (dayPedidos.length < 2) {
+                                dayPedidos.push(this.pedidos[i]);
+                            }
+                        }
+                    }
                     
                     let badgeHtml = '';
                     if (pedidosCount > 0) {
@@ -1604,7 +1697,7 @@
                     }
                     
                     let eventsHtml = '';
-                    dayPedidos.slice(0, 2).forEach(p => {
+                    dayPedidos.forEach(p => {
                         eventsHtml += `<div class="calendar-event" onclick="event.stopPropagation(); app.viewPedido(${p.id})">${p.cliente}</div>`;
                     });
                     
@@ -1618,9 +1711,12 @@
                         ${eventsHtml}
                     `;
                     
-                    div.onclick = () => {
-                        this.filterByDate(dateStr);
-                    };
+                    // Usar onclick con closure para evitar problemas en iOS
+                    div.onclick = (function(date) {
+                        return function() {
+                            app.filterByDate(date);
+                        };
+                    })(dateStr);
                     
                     calendar.appendChild(div);
                 }
@@ -1634,7 +1730,6 @@
                 }
             },
 
-            // CORREGIDO: Función simplificada para evitar problemas de zona horaria en iOS
             getLocalDateString: function(date) {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1642,30 +1737,55 @@
                 return `${year}-${month}-${day}`;
             },
 
-            // CORREGIDO: Simplificar filterByDate para evitar recursión infinita
             filterByDate: function(dateStr) {
-                this.showSection('lista', document.querySelectorAll('.nav-btn')[1]);
+                // Prevenir múltiples llamadas rápidas (doble clic)
+                if (this.isFiltering) {
+                    console.log('Filtrado ya en progreso, ignorando clic');
+                    return;
+                }
+                this.isFiltering = true;
                 
-                // Usar setTimeout para evitar bloqueo del hilo principal en iOS
-                setTimeout(() => {
-                    const filterFecha = document.getElementById('filterFecha');
-                    const searchInput = document.getElementById('searchInput');
-                    const filterEstado = document.getElementById('filterEstado');
+                console.log('Filtrando por fecha:', dateStr);
+                
+                try {
+                    // Cambiar a sección lista SIN usar showSection (para evitar recursión)
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
                     
-                    if (searchInput) searchInput.value = '';
-                    if (filterEstado) filterEstado.value = '';
-                    if (filterFecha) filterFecha.value = dateStr;
+                    document.getElementById('lista').classList.add('active');
+                    document.querySelectorAll('.nav-btn')[1].classList.add('active');
                     
-                    // Filtrar directamente sin recargar desde servidor
-                    let filtered = this.pedidos.filter(p => p.fecha_entrega === dateStr);
+                    // Actualizar filtros visualmente
+                    document.getElementById('searchInput').value = '';
+                    document.getElementById('filterEstado').value = '';
+                    document.getElementById('filterFecha').value = dateStr;
+                    
+                    // Filtrar pedidos de forma síncrona (sin async/await)
+                    const filtered = [];
+                    for (let i = 0; i < this.pedidos.length; i++) {
+                        if (this.pedidos[i].fecha_entrega === dateStr) {
+                            filtered.push(this.pedidos[i]);
+                        }
+                    }
+                    
+                    // Renderizar inmediatamente
                     this.renderPedidos(filtered);
                     
+                    // Mostrar notificación
                     if (filtered.length === 0) {
                         this.showNotification(`No hay pedidos para el ${dateStr}`, 'error');
                     } else {
-                        this.showNotification(`${filtered.length} pedido(s) encontrado(s) para el ${dateStr}`);
+                        this.showNotification(`${filtered.length} pedido(s) para el ${dateStr}`);
                     }
-                }, 100);
+                    
+                } catch (e) {
+                    console.error('Error en filterByDate:', e);
+                } finally {
+                    // Liberar el flag después de un tiempo
+                    setTimeout(() => {
+                        this.isFiltering = false;
+                    }, 500);
+                }
             },
             
             changeMonth: function(delta) {
@@ -1787,7 +1907,7 @@
                     <div class="form-group">
                         <label>Imágenes de Referencia</label>
                         <div class="pedido-images" style="margin-top: 15px;">
-                            ${p.imagenes.map(img => `<img src="${img}" onclick="app.showImageModal('${img}')" style="width: 100px; height: 100px;">`).join('')}
+                            ${p.imagenes.map(img => `<img src="${img}" onclick="app.showImageModal('${img}')" style="width: 100px; height: 100px;" loading="lazy">`).join('')}
                         </div>
                     </div>
                     ` : ''}
