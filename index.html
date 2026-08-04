@@ -4,9 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title> Dulce Bocado TB - Agenda</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+// Cargador inteligente de Supabase con reintentos
+(function() {
+    window.supabaseLoaded = false;
+    window.supabaseLoadError = null;
+    
+    function loadScript(src, retries) {
+        return new Promise(function(resolve, reject) {
+            var script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = function() {
+                window.supabaseLoaded = true;
+                resolve();
+            };
+            script.onerror = function() {
+                if (retries > 0) {
+                    setTimeout(function() {
+                        loadScript(src, retries - 1).then(resolve).catch(reject);
+                    }, 3000); // Reintenta en 3 segundos
+                } else {
+                    window.supabaseLoadError = 'No se pudo cargar Supabase. Verifica tu conexión.';
+                    reject(new Error(window.supabaseLoadError));
+                }
+            };
+            // Timeout de 10 segundos para datos móviles lentos
+            setTimeout(function() {
+                if (!window.supabaseLoaded) {
+                    script.onerror();
+                }
+            }, 10000);
+            document.head.appendChild(script);
+        });
+    }
+    
+    // Intenta cargar desde unpkg, si falla usa jsDelivr (mirror más rápido en México)
+    loadScript('https://unpkg.com/@supabase/supabase-js@2', 2)
+        .catch(function() {
+            return loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 2);
+        })
+        .catch(function(err) {
+            console.error('Supabase no cargó:', err);
+            window.supabaseLoadError = 'Error de red. La app funcionará en modo offline.';
+        });
+})();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
+<style>
+/* Fallback si Google Fonts no carga (datos móviles lentos) */
+@font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Segoe UI'), local('Roboto'), local('Helvetica Neue'), local('Arial'), local('system-ui');
+}
+@font-face {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Georgia'), local('Times New Roman'), local('serif');
+}
+    </style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary: #e8927c; --primary-dark: #d67b65; --secondary: #f4e4e1;
@@ -591,19 +650,37 @@ const app = {
     pedidosPorFecha: {},
 
     init: function() {
-        const savedUrl = localStorage.getItem('supabaseUrl');
-        const savedKey = localStorage.getItem('supabaseKey');
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        if (savedUrl && savedKey) {
-            this.initSupabase(savedUrl, savedKey);
-        } else {
+    const savedUrl = localStorage.getItem('supabaseUrl');
+    const savedKey = localStorage.getItem('supabaseKey');
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    
+    // Verificar si Supabase ya cargó o esperar
+    const self = this;
+    function tryInitSupabase() {
+        if (typeof supabase !== 'undefined' && supabase.createClient) {
+            // Supabase cargó correctamente
+            if (savedUrl && savedKey) {
+                self.initSupabase(savedUrl, savedKey);
+            } else {
+                document.getElementById('welcomeScreen').style.display = 'flex';
+            }
+        } else if (window.supabaseLoadError) {
+            // Falló la carga de Supabase - mostrar mensaje pero permitir usar app
             document.getElementById('welcomeScreen').style.display = 'flex';
+            document.querySelector('.welcome-subtitle').innerHTML = 
+                '⚠️ Sin conexión a internet o Supabase no disponible.<br><small style="color:#e74c3c;">Conéctate a WiFi o revisa tus datos móviles</small>';
+        } else {
+            // Aún cargando, esperar 500ms más
+            setTimeout(tryInitSupabase, 500);
         }
-        this.setDateMinAttribute();
-        this.setupUnsavedChanges();
-        this.setupSearchDebounce();
-    },
+    }
+    
+    tryInitSupabase();
+    this.setDateMinAttribute();
+    this.setupUnsavedChanges();
+    this.setupSearchDebounce();
+},
 
     toggleTheme: function() {
         const current = document.documentElement.getAttribute('data-theme');
