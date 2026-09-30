@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agenda-Dulce Bocado TB</title>
+    <script>
+    (function() {
+        window.supabaseLoaded = false;
+        window.supabaseLoadError = null;
+        
+        function loadScript(src, retries) {
+            return new Promise(function(resolve, reject) {
+                var script = document.createElement('script');
+                script.src = src;
+                script.async = true;
+                script.onload = function() {
+                    window.supabaseLoaded = true;
+                    resolve();
+                };
+                script.onerror = function() {
+                    if (retries > 0) {
+                        setTimeout(function() {
+                            loadScript(src, retries - 1).then(resolve).catch(reject);
+                        }, 3000);
+                    } else {
+                        window.supabaseLoadError = 'No se pudo cargar Supabase. Verifica tu conexión.';
+                        reject(new Error(window.supabaseLoadError));
+                    }
+                };
+                setTimeout(function() {
+                    if (!window.supabaseLoaded) {
+                        script.onerror();
+                    }
+                }, 10000);
+                document.head.appendChild(script);
+            });
+        }
+        
+        loadScript('https://unpkg.com/@supabase/supabase-js@2', 2)
+            .catch(function() {
+                return loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 2);
+            })
+            .catch(function(err) {
+                console.error('Supabase no cargó:', err);
+                window.supabaseLoadError = 'Error de red. La app funcionará en modo offline.';
+            });
+    })();
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f8f3e8;
+            --surface: #f8f3e8;
+            --text: #4a3e3d;
+            --text-light: #8c7a78;
+            --primary: #d97762;
+            --primary-light: #f5cfc7;
+            --accent-cream: #fcefdc;
+            --accent-gold: #e6a15c;
+            /* Sombras Neumórficas Tono Mantequilla / Crema */
+            --neu-shadow-flat: 6px 6px 14px #e0d8c8, -6px -6px 14px #ffffff;
+            --neu-shadow-pressed: inset 3px 3px 7px #e0d8c8, inset -3px -3px 7px #ffffff;
+            --neu-shadow-hover: 10px 10px 20px #d6ccba, -10px -10px 20px #ffffff;
+            --radius: 22px;
+            --radius-sm: 14px;
+            --border-subtle: rgba(255, 255, 255, 0.7);
+        }
+        [data-theme="dark"] {
+            --bg: #1f1b1a;
+            --surface: #1f1b1a;
+            --text: #f5ebe6;
+            --text-light: #a89a98;
+            --primary: #e88d78;
+            --primary-light: #422924;
+            --accent-cream: #2d2624;
+            --accent-gold: #f0b069;
+            --neu-shadow-flat: 6px 6px 14px #151211, -6px -6px 14px #292423;
+            --neu-shadow-pressed: inset 3px 3px 7px #151211, inset -3px -3px 7px #292423;
+            --neu-shadow-hover: 10px 10px 20px #0f0d0c, -10px -10px 20px #2f2928;
+            --border-subtle: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            min-height: 100vh; padding: 20px 16px; color: var(--text);
+            transition: background 0.3s, color 0.3s;
+            padding-bottom: 95px;
+        }
+        @media (min-width: 769px) { body { padding-bottom: 35px; } }
+
+        .container { max-width: 980px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 24px; position: relative; }
+        
+        .header-brand {
+            display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .brand-badge {
+            background: linear-gradient(135deg, #f0b069 0%, #d97762 100%); color: white;
+            padding: 5px 16px; border-radius: 50px; font-weight: 700; font-size: 0.72rem;
+            letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(217, 119, 98, 0.3);
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--text) 0%, var(--primary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            letter-spacing: -0.8px;
+        }
+        .tagline { color: var(--text-light); font-size: 0.9rem; font-weight: 500; }
+
+        .top-bar-controls {
+            position: absolute; top: 0; right: 0; display: flex; align-items: center; gap: 10px;
+        }
+        .connection-status {
+            display: inline-flex; align-items: center; gap: 8px; padding: 7px 15px;
+            border-radius: 50px; font-size: 0.78rem; font-weight: 600;
+            background: var(--surface); box-shadow: var(--neu-shadow-flat); border: 1px solid var(--border-subtle);
+        }
+        .status-connected { color: #27ae60; }
+        .status-disconnected { color: #e74c3c; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-connected .status-dot { background: #27ae60; box-shadow: 0 0 8px #27ae60; }
+        .status-disconnected .status-dot { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
+
+        .theme-toggle {
+            background: var(--surface); border: 1px solid var(--border-subtle);
+            width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1rem;
+            box-shadow: var(--neu-shadow-flat); transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; color: var(--text);
+        }
+        .theme-toggle:active { box-shadow: var(--neu-shadow-pressed); }
+
+        /* WELCOME SCREEN */
+        .welcome-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 60vh; text-align: center; animation: fadeIn 0.8s ease;
+        }
+        .welcome-logo {
+            font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 800;
+            color: var(--primary); margin-bottom: 8px;
+        }
+        .welcome-subtitle { color: var(--text-light); font-size: 1.1rem; margin-bottom: 30px; font-weight: 400; }
+        .welcome-features {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px; max-width: 700px; margin-bottom: 30px; width: 100%;
+        }
+        .welcome-feature {
+            background: var(--surface); padding: 25px 20px; border-radius: var(--radius);
+            box-shadow: var(--neu-shadow-flat); border: 1px solid var(--border-subtle); transition: all 0.3s;
+        }
+        .welcome-feature-icon { font-size: 2.2rem; margin-bottom: 10px; }
+        .welcome-feature-title { font-weight: 700; color: var(--text); margin-bottom: 4px; }
+        .welcome-feature-desc { font-size: 0.85rem; color: var(--text-light); }
+
+        /* NAV TABS */
+        .nav-tabs {
+            display: flex; gap: 10px; margin-bottom: 24px; justify-content: center;
+            background: var(--surface); padding: 8px; border-radius: 50px; box-shadow: var(--neu-shadow-flat);
+            border: 1px solid var(--border-subtle); max-width: fit-content; margin-left: auto; margin-right: auto;
+            position: sticky; top: 12px; z-index: 100; backdrop-filter: blur(10px);
+        }
+
+        .nav-btn {
+            padding: 10px 22px; border: none; border-radius: 50px; cursor: pointer;
+            font-size: 0.88rem; font-weight: 700; transition: all 0.3s; background: var(--surface);
+            color: var(--text-light); font-family: 'Plus Jakarta Sans', sans-serif;
+            display: flex; align-items: center; gap: 6px; position: relative;
+            box-shadow: var(--neu-shadow-flat);
+        }
+        .nav-btn.active {
+            background: linear-gradient(135deg, #f0b069 0%, #d97762 100%); color: white;
+            box-shadow: inset 1px 1px 3px rgba(255,255,255,0.4), 0 5px 15px rgba(217, 119, 98, 0.35);
+        }
+        .nav-btn:active:not(.active) { box-shadow: var(--neu-shadow-pressed); }
+        
+        .badge-count {
+            background: #e74c3c; color: white; border-radius: 50px; font-size: 0.7rem;
+            padding: 1px 7px; font-weight: 800; margin-left: 2px; box-shadow: 0 2px 6px rgba(231, 76, 60, 0.4);
+        }
+
+        /* MOBILE BOTTOM NAV */
+        @media (max-width: 768px) {
+            .top-bar-controls { position: relative; justify-content: center; margin-top: 10px; margin-bottom: 10px; }
+            .nav-tabs {
+                position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
+                border-radius: 24px 24px 0 0; margin: 0; padding: 12px 14px; justify-content: space-around;
+                box-shadow: 0 -6px 25px rgba(0,0,0,0.08); border-top: 1px solid var(--border-subtle);
+                background: var(--surface);
+            }
+            .nav-btn { flex-direction: column; gap: 2px; font-size: 0.7rem; padding: 6px 12px; border-radius: 16px; }
+            .nav-btn span:first-child { font-size: 1.15rem; }
+            .badge-count { position: absolute; top: 2px; right: 8px; font-size: 0.65rem; padding: 1px 5px; }
+        }
+
+        .section { display: none; animation: fadeIn 0.4s ease; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+        .card {
+            background: var(--surface); border-radius: var(--radius); padding: 26px;
+            box-shadow: var(--neu-shadow-flat); margin-bottom: 22px; transition: all 0.3s;
+            border: 1px solid var(--border-subtle); position: relative; overflow: hidden;
+        }
+        .card-title {
+            font-family: 'Playfair Display', serif; font-size: 1.45rem; color: var(--text);
+            margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-weight: 800;
+        }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 7px; font-weight: 700; color: var(--text); font-size: 0.85rem; }
+        
+        input, select, textarea {
+            width: 100%; padding: 14px 18px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+            font-size: 0.92rem; transition: all 0.3s; font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--surface); color: var(--text); box-shadow: var(--neu-shadow-pressed);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: var(--neu-shadow-pressed), 0 0 0 3px rgba(217, 119, 98, 0.15);
+        }
+        textarea { resize: vertical; min-height: 95px; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+
+        .image-upload {
+            border: 2px dashed var(--primary-light); border-radius: var(--radius-sm); padding: 28px;
+            text-align: center; cursor: pointer; transition: all 0.3s; background: var(--surface);
+            box-shadow: var(--neu-shadow-flat);
+        }
+        .image-upload:active { box-shadow: var(--neu-shadow-pressed); }
+        .image-preview {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-top: 14px;
+        }
+        .image-preview-item { position: relative; border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--neu-shadow-flat); }
+        .image-preview img { width: 100%; height: 90px; object-fit: cover; cursor: pointer; transition: transform 0.3s; }
+        .image-preview img:hover { transform: scale(1.08); }
+        .remove-image {
+            position: absolute; top: -6px; right: -6px; background: #e74c3c; color: white;
+            border: 2px solid var(--surface); border-radius: 50%; width: 24px; height: 24px;
+            cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;
+        }
+
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 50px; cursor: pointer;
+            font-size: 0.88rem; font-weight: 700; transition: all 0.3s; font-family: 'Plus Jakarta Sans', sans-serif;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: var(--neu-shadow-flat); background: var(--surface); color: var(--text);
+        }
+        .btn:active { box-shadow: var(--neu-shadow-pressed); transform: translateY(1px); }
+        .btn-primary {
+            background: linear-gradient(135deg, #f0b069 0%, #d97762 100%); color: var(--white);
+            box-shadow: 0 5px 15px rgba(217, 119, 98, 0.35);
+        }
+        .btn-danger { background: linear-gradient(135deg, #ff7675 0%, #d63031 100%); color: white; }
+        .btn-success { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; }
+        .btn-whatsapp { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: white; }
+
+        .filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .search-box { flex: 1; min-width: 200px; position: relative; }
+        .search-box input { padding-left: 40px; }
+        .search-box::before { content: "🔍"; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; opacity: 0.5; }
+
+        .pedido-card {
+            background: var(--surface); border-radius: var(--radius); padding: 22px; margin-bottom: 18px;
+            border: 1px solid var(--border-subtle); transition: all 0.3s; position: relative; overflow: hidden;
+            box-shadow: var(--neu-shadow-flat);
+        }
+        
+        .pedido-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%;
+        }
+        .pedido-card.estado-pendiente::before { background: #f1c40f; }
+        .pedido-card.estado-horneado::before { background: #e67e22; }
+        .pedido-card.estado-ensamblado::before { background: #3498db; }
+        .pedido-card.estado-listo::before { background: #9b59b6; }
+        .pedido-card.estado-entregado::before { background: #27ae60; }
+        .pedido-card.estado-cancelado::before { background: #e74c3c; }
+
+        .pedido-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+        .pedido-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 800; color: var(--text); }
+        .pedido-producto { color: var(--primary); font-weight: 700; font-size: 0.9rem; margin-top: 2px; }
+        
+        .pedido-date {
+            background: linear-gradient(135deg, #f0b069 0%, #d97762 100%); color: white;
+            padding: 5px 14px; border-radius: 50px; font-size: 0.8rem; font-weight: 700;
+            box-shadow: 0 3px 10px rgba(217, 119, 98, 0.3); display: inline-block; margin-bottom: 5px;
+        }
+
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px;
+            border-radius: 50px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        }
+        .status-pendiente { background: rgba(241, 196, 15, 0.2); color: #d35400; }
+        .status-horneado { background: rgba(230, 126, 34, 0.2); color: #d35400; }
+        .status-ensamblado { background: rgba(52, 152, 219, 0.2); color: #2980b9; }
+        .status-listo { background: rgba(155, 89, 182, 0.2); color: #8e44ad; }
+        .status-entregado { background: rgba(39, 174, 96, 0.2); color: #27ae60; }
+        .status-cancelado { background: rgba(231, 76, 60, 0.2); color: #c0392b; }
+
+        .ticket-finance {
+            background: var(--surface); border-radius: var(--radius-sm); padding: 14px 18px;
+            margin: 15px 0; box-shadow: var(--neu-shadow-pressed);
+        }
+        .ticket-details {
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px;
+        }
+        .ticket-item { font-size: 0.82rem; color: var(--text-light); }
+        .ticket-item span { font-weight: 800; color: var(--text); font-size: 0.92rem; }
+        
+        .progress-bar-container {
+            width: 100%; height: 7px; background: var(--surface); border-radius: 10px;
+            box-shadow: var(--neu-shadow-pressed); overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; background: linear-gradient(90deg, #f0b069 0%, #d97762 100%);
+            border-radius: 10px; transition: width 0.5s ease;
+        }
+
+        .pedido-images { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; padding-bottom: 4px; }
+        .pedido-images img {
+            width: 80px; height: 80px; object-fit: cover; border-radius: 12px;
+            cursor: pointer; box-shadow: var(--neu-shadow-flat); transition: all 0.3s;
+        }
+        .pedido-images img:hover { transform: scale(1.08); }
+        .pedido-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+        .pedido-actions button, .pedido-actions a { padding: 8px 16px; font-size: 0.82rem; }
+
+        /* CALENDAR */
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 16px; }
+        .calendar-header {
+            text-align: center; font-weight: 800; color: var(--primary); padding: 8px 4px;
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;
+        }
+        .calendar-day {
+            background: var(--surface); border-radius: var(--radius-sm); padding: 8px; min-height: 80px;
+            box-shadow: var(--neu-shadow-flat); transition: all 0.3s; position: relative; cursor: pointer;
+        }
+        .calendar-day:active { box-shadow: var(--neu-shadow-pressed); }
+        .calendar-day.other-month { opacity: 0.35; }
+        .calendar-day.today {
+            background: linear-gradient(135deg, #f0b069 0%, #d97762 100%); color: white;
+            box-shadow: 0 5px 15px rgba(217, 119, 98, 0.35);
+        }
+        .calendar-day-number { font-weight: 800; margin-bottom: 4px; font-size: 0.85rem; }
+        .calendar-badge {
+            position: absolute; top: 5px; right: 5px; min-width: 20px; height: 20px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800;
+            color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .badge-low { background: #27ae60; } .badge-medium { background: #f1c40f; } .badge-high { background: #e74c3c; }
+        .calendar-event {
+            background: rgba(217, 119, 98, 0.15); color: var(--primary); padding: 3px 6px;
+            border-radius: 5px; font-size: 0.68rem; margin-bottom: 3px; cursor: pointer;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;
+            border-left: 3px solid var(--primary);
+        }
+        .calendar-day.today .calendar-event { background: rgba(255,255,255,0.25); color: white; border-left-color: white; }
+        .calendar-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+        .month-year { font-family: 'Playfair Display', serif; font-size: 1.45rem; font-weight: 800; color: var(--text); }
+
+        /* TARJETAS DE ESTADÍSTICAS COMPACTAS (MÁS PEQUEÑAS) */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .stat-card {
+            background: var(--surface); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm);
+            text-align: center; box-shadow: var(--neu-shadow-flat); transition: all 0.3s;
+            cursor: pointer;
+        }
+        .stat-card:active { box-shadow: var(--neu-shadow-pressed); }
+        .stat-number { font-size: 1.3rem; font-weight: 800; margin-bottom: 1px; color: var(--primary); }
+        .stat-label { font-size: 0.75rem; color: var(--text-light); font-weight: 600; }
+
+        .empty-state { text-align: center; padding: 40px 16px; color: var(--text-light); }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
+
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 18px; padding: 8px; }
+        .pagination-info { color: var(--text-light); font-size: 0.85rem; font-weight: 600; }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); z-index: 1000;
+            justify-content: center; align-items: center; padding: 16px;
+        }
+        .modal.active { display: flex; animation: fadeIn 0.3s; }
+        .modal-content {
+            background: var(--surface); border-radius: var(--radius); max-width: 720px; width: 100%;
+            max-height: 88vh; overflow-y: auto; position: relative; box-shadow: var(--neu-shadow-hover);
+            border: 1px solid var(--border-subtle);
+        }
+        .modal-close {
+            position: absolute; top: 14px; right: 14px; background: var(--surface); border: none;
+            width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 16px;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+            color: var(--text); z-index: 10; box-shadow: var(--neu-shadow-flat);
+        }
+        .modal-close:hover { background: var(--primary); color: white; }
+        .modal-body { padding: 28px; }
+        .image-modal img { width: 100%; border-radius: var(--radius-sm); }
+
+        .loading-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 3000;
+            justify-content: center; align-items: center; flex-direction: column; gap: 14px;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-spinner { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        .loading-text { color: white; font-size: 1rem; font-weight: 600; }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        .loading-inline { display: inline-block; width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite; }
+
+        .sync-indicator {
+            position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white;
+            padding: 10px 20px; border-radius: 50px; display: none; align-items: center; gap: 8px;
+            box-shadow: 0 5px 15px rgba(217, 119, 98, 0.4); z-index: 1000; font-weight: 600; font-size: 0.82rem;
+        }
+        .sync-indicator.show { display: flex; animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from{transform:translateY(80px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+        .notification {
+            position: fixed; top: 20px; right: 20px; background: var(--primary);
+            color: white; padding: 12px 22px; border-radius: 14px;
+            box-shadow: 0 6px 20px rgba(217, 119, 98, 0.4); display: none;
+            animation: slideIn 0.4s ease; z-index: 2000; font-weight: 600; font-size: 0.88rem;
+        }
+        @keyframes slideIn { from{transform:translateX(350px);opacity:0} to{transform:translateX(0);opacity:1} }
+
+        .config-panel { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 18px; box-shadow: var(--neu-shadow-pressed); }
+        .phone-valid { border-color: #27ae60 !important; }
+        .phone-invalid { border-color: #e74c3c !important; }
+        .tags-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .tag {
+            background: rgba(217, 119, 98, 0.15); color: var(--primary);
+            padding: 3px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-brand">
+                <div class="brand-badge">Repostería fina</div>
+                <div class="logo">Agenda-Dulce Bocado TB</div>
+                <div class="tagline">Gestión de Pedidos Especiales</div>
+            </div>
+            <div class="top-bar-controls">
+                <div id="connectionStatus" class="connection-status status-disconnected">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Desconectado</span>
+                </div>
+                <button class="theme-toggle" onclick="app.toggleTheme()" title="Cambiar tema">🌙</button>
+            </div>
+        </header>
+
+        <div id="welcomeScreen" class="welcome-screen" style="display:none;">
+            <div class="welcome-logo">Agenda-Dulce Bocado TB</div>
+            <div class="welcome-subtitle">Tu organizador de pedidos inteligente</div>
+            <div class="welcome-features">
+                <div class="welcome-feature">
+                    <div class="welcome-feature-icon">📅</div>
+                    <div class="welcome-feature-title">Calendario</div>
+                    <div class="welcome-feature-desc">Fechas de entregas al momento</div>
+                </div>
+                <div class="welcome-feature">
+                    <div class="welcome-feature-icon">📸</div>
+                    <div class="welcome-feature-title">Modelos</div>
+                    <div class="welcome-feature-desc">Fotos de referencia y detalles</div>
+                </div>
+                <div class="welcome-feature">
+                    <div class="welcome-feature-icon">💬</div>
+                    <div class="welcome-feature-title">WhatsApp</div>
+                    <div class="welcome-feature-desc">Mensajes directos a clientes</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="app.showConfig()" style="font-size:1rem;padding:14px 34px;">
+                <span>🚀</span> Iniciar Agenda
+            </button>
+        </div>
+
+        <div id="configSection" class="card" style="display:none;">
+            <h2 class="card-title"><span>⚙️</span> Conexión Supabase</h2>
+            <p style="margin-bottom:16px;color:var(--text-light);font-size:0.88rem;">Ingresa las credenciales para sincronizar tus pedidos:</p>
+            <div class="form-group"><label>Supabase URL</label><input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co"></div>
+            <div class="form-group"><label>Supabase Anon Key</label><input type="text" id="supabaseKey" placeholder="eyJ..."></div>
+            <button class="btn btn-primary" onclick="app.saveConfig()" style="width:100%;"><span>🔗</span> Conectar Agenda</button>
+        </div>
+
+        <div id="appContent" style="display:none;">
+            <div class="nav-tabs">
+                <button class="nav-btn active" onclick="app.showSection('nuevo',this)"><span>➕</span><span>Nuevo</span></button>
+                <button class="nav-btn" id="btnToday" onclick="app.filterToday(this)">
+                    <span>☀️</span><span>Hoy</span>
+                    <span id="todayCountBadge" class="badge-count" style="display:none;">0</span>
+                </button>
+                <button class="nav-btn" onclick="app.showSection('calendario',this)"><span>📅</span><span>Calendario</span></button>
+                <button class="nav-btn" onclick="app.showSection('config',this)"><span>⚙️</span><span>Config</span></button>
+            </div>
+
+            <div id="nuevo" class="section active">
+                <div class="card">
+                    <h2 class="card-title"><span>🎂</span> <span id="formTitle">Registrar Nuevo Pedido</span></h2>
+                    <form id="pedidoForm" onsubmit="return app.handleSubmit(event)">
+                        <div class="form-row">
+                            <div class="form-group"><label for="cliente">Nombre del Cliente *</label><input type="text" id="cliente" required placeholder="Ej: María García"></div>
+                            <div class="form-group">
+                                <label for="telefono">Teléfono *</label>
+                                <input type="tel" id="telefono" required placeholder="Ej: 288-123-4567" oninput="app.formatPhone(this)">
+                                <small id="phoneHint" style="color:var(--text-light);font-size:0.75rem;margin-top:4px;display:block;">Formato: 10 dígitos</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="tipoProducto">Tipo de Producto *</label><input type="text" id="tipoProducto" required placeholder="Ej: Pastel 3 leches / Galletas decoradas"></div>
+                            <div class="form-group"><label for="fechaEntrega">Fecha de Entrega *</label><input type="date" id="fechaEntrega" required></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="horaEntrega">Hora de Entrega</label><input type="time" id="horaEntrega"></div>
+                            <div class="form-group"><label for="precio">Precio Total ($)</label><input type="number" id="precio" step="0.01" placeholder="Ej: 850.00"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="anticipo">Anticipo / Seña ($)</label><input type="number" id="anticipo" step="0.01" placeholder="Ej: 300.00"></div>
+                            <div class="form-group">
+                                <label for="estado">Estado del Pedido</label>
+                                <select id="estado">
+                                    <option value="pendiente">🟡 Pendiente</option>
+                                    <option value="horneado">🟠 Horneado</option>
+                                    <option value="ensamblado">🔵 Ensamblado</option>
+                                    <option value="listo">🟣 Listo</option>
+                                    <option value="entregado">🟢 Entregado</option>
+                                    <option value="cancelado">🔴 Cancelado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group"><label for="direccion">Dirección / Notas de Envío</label><input type="text" id="direccion" placeholder="Ej: Entrega a domicilio en..."></div>
+                        <div class="form-group"><label for="descripcion">Descripción y Especificaciones *</label><textarea id="descripcion" required placeholder="Sabores, coberturas, rellenos, temáticas, textos o frases especiales..."></textarea></div>
+                        <div class="form-group"><label for="notas">Notas Internas o Alergias</label><textarea id="notas" placeholder="Alergias del cliente, detalles de empaque..."></textarea></div>
+                        <div class="form-group">
+                            <label>Etiquetas Rápidas (separadas por coma)</label>
+                            <input type="text" id="tags" placeholder="Ej: Cumpleaños, Boda, Infantil, SinGluten" oninput="app.updateTagsPreview(this.value)">
+                            <div class="tags-container" id="tagsPreview"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Fotos de Referencia / Modelo</label>
+                            <div class="image-upload" onclick="document.getElementById('imagenes').click()">
+                                <div style="font-size:2.2rem;margin-bottom:6px;">📷</div>
+                                <div style="font-weight:700;color:var(--text);margin-bottom:2px;font-size:0.88rem;">Haz clic para adjuntar imágenes</div>
+                                <div style="font-size:0.78rem;color:var(--text-light);">Compresión automática incluida</div>
+                            </div>
+                            <input type="file" id="imagenes" multiple accept="image/*" style="display:none;" onchange="app.previewImages(this)">
+                            <div class="image-preview" id="imagePreview"></div>
+                        </div>
+                        <div style="display:flex;gap:12px;margin-top:20px;">
+                            <button type="button" class="btn" onclick="app.resetForm()" style="flex:1;"><span>🧹</span> Limpiar</button>
+                            <button type="submit" class="btn btn-primary" style="flex:2;" id="submitBtn"><span>💾</span> Guardar Pedido</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="lista" class="section">
+                <!-- TARJETAS PEQUEÑAS DE ESTADÍSTICAS -->
+                <div class="stats" id="statsContainer"></div>
+                <div class="card">
+                    <div class="filters">
+                        <div class="search-box"><input type="text" id="searchInput" placeholder="Buscar cliente, producto o etiqueta..."></div>
+                        <select id="filterEstado" onchange="app.filterPedidos()" style="width:auto;min-width:140px;">
+                            <option value="">Todos los estados</option>
+                            <option value="pendiente">🟡 Pendiente</option>
+                            <option value="horneado">🟠 Horneado</option>
+                            <option value="ensamblado">🔵 Ensamblado</option>
+                            <option value="listo">🟣 Listo</option>
+                            <option value="entregado">🟢 Entregado</option>
+                            <option value="cancelado">🔴 Cancelado</option>
+                        </select>
+                        <input type="date" id="filterFecha" onchange="app.filterPedidos()" style="width:auto;">
+                        <button class="btn" onclick="app.clearFilters()"><span>🧹</span> Limpiar</button>
+                        <button class="btn btn-primary" onclick="app.loadPedidos()"><span>🔄</span></button>
+                    </div>
+                    <div id="pedidosList">
+                        <div class="empty-state"><div class="loading-inline"></div><p style="margin-top:10px;color:var(--text-light);">Cargando pedidos...</p></div>
+                    </div>
+                    <div class="pagination" id="paginationContainer" style="display:none;">
+                        <button class="btn" onclick="app.prevPage()">◀ Anterior</button>
+                        <span class="pagination-info" id="paginationInfo"></span>
+                        <button class="btn" onclick="app.nextPage()">Siguiente ▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calendario" class="section">
+                <div class="card">
+                    <div class="calendar-controls">
+                        <button class="btn" onclick="app.changeMonth(-1)"><span>◀</span></button>
+                        <div class="month-year" id="monthYear"></div>
+                        <button class="btn" onclick="app.changeMonth(1)"><span>▶</span></button>
+                    </div>
+                    <div class="calendar" id="calendar"></div>
+                </div>
+            </div>
+
+            <div id="config" class="section">
+                <div class="card">
+                    <h2 class="card-title"><span>⚙️</span> Configuración</h2>
+                    <div class="config-panel">
+                        <h3 style="margin-bottom:10px;color:var(--primary);font-size:1rem;">Servidor Supabase</h3>
+                        <p style="margin-bottom:8px;font-size:0.85rem;"><strong>URL:</strong> <span id="configUrl" style="color:var(--text-light);"></span></p>
+                        <button class="btn btn-danger" onclick="app.clearConfig()" style="margin-top:4px;"><span>🔄</span> Cambiar Credenciales</button>
+                    </div>
+                    <div class="config-panel">
+                        <h3 style="margin-bottom:10px;color:var(--primary);font-size:1rem;">Respaldo de Seguridad</h3>
+                        <p style="margin-bottom:10px;color:var(--text-light);font-size:0.82rem;">Descarga una copia local completa de tus datos.</p>
+                        <button class="btn" onclick="app.exportData()"><span>📥</span> Descargar Backup (JSON)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal" onclick="app.closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="app.closeModal()">×</button>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+    <div id="imageModal" class="modal image-modal" onclick="app.closeImageModal()">
+        <div class="modal-content" style="max-width:90%;background:transparent;border:none;box-shadow:none;" onclick="event.stopPropagation()">
+            <button class="modal-close" style="background:white;" onclick="app.closeImageModal()">×</button>
+            <img id="modalImage" src="" alt="Vista previa">
+        </div>
+    </div>
+    <div id="loadingOverlay" class="loading-overlay"><div class="loading-spinner"></div><div class="loading-text">Procesando...</div></div>
+    <div id="notification" class="notification"></div>
+    <div id="syncIndicator" class="sync-indicator"><span>🔄</span> Actualizando agenda...</div>
+
+<script>
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('🚨 ERROR GLOBAL:', message, 'en línea', lineno, error);
+    return false;
+};
+
+const app = {
+    supabaseClient: null,
+    pedidos: [],
+    currentMonth: new Date(),
+    editingId: null,
+    tempImages: [],
+    isOnline: false,
+    existingImages: [],
+    isLoading: false,
+    isFiltering: false,
+    hasUnsavedChanges: false,
+    currentPage: 1,
+    itemsPerPage: 20,
+    filteredPedidos: [],
+    debounceTimer: null,
+    pedidosPorFecha: {},
+
+    init: function() {
+        const savedUrl = localStorage.getItem('supabaseUrl');
+        const savedKey = localStorage.getItem('supabaseKey');
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        
+        const self = this;
+        function tryInitSupabase() {
+            if (typeof supabase !== 'undefined' && supabase.createClient) {
+                if (savedUrl && savedKey) {
+                    self.initSupabase(savedUrl, savedKey);
+                } else {
+                    document.getElementById('welcomeScreen').style.display = 'flex';
+                }
+            } else if (window.supabaseLoadError) {
+                document.getElementById('welcomeScreen').style.display = 'flex';
+                document.querySelector('.welcome-subtitle').innerHTML = 
+                    '⚠️ Sin conexión a la red.<br><small style="color:#e74c3c;">Verifica tus datos móviles o WiFi</small>';
+            } else {
+                setTimeout(tryInitSupabase, 500);
+            }
+        }
+        
+        tryInitSupabase();
+        this.setDateMinAttribute();
+        this.setupUnsavedChanges();
+        this.setupSearchDebounce();
+    },
+
+    getTodayLocalDate: function() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    },
+
+    toggleTheme: function() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    },
+
+    showConfig: function() {
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('configSection').style.display = 'block';
+    },
+
+    setDateMinAttribute: function() {
+        const fechaInput = document.getElementById('fechaEntrega');
+        if (this.editingId) {
+            fechaInput.removeAttribute('min');
+        } else {
+            fechaInput.min = this.getTodayLocalDate();
+        }
+    },
+
+    setupUnsavedChanges: function() {
+        const form = document.getElementById('pedidoForm');
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('input', () => { this.hasUnsavedChanges = true; });
+        });
+        window.addEventListener('beforeunload', (e) => {
+            if (this.hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    },
+
+    setupSearchDebounce: function() {
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', () => {
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => { this.filterPedidos(); }, 300);
+        });
+    },
+
+    formatPhone: function(input) {
+        let value = input.value.replace(/\D/g, '');
+        if (value.length > 10) value = value.slice(0, 10);
+        if (value.length >= 6) {
+            input.value = value.slice(0, 3) + '-' + value.slice(3, 6) + '-' + value.slice(6);
+        } else if (value.length >= 3) {
+            input.value = value.slice(0, 3) + '-' + value.slice(3);
+        } else {
+            input.value = value;
+        }
+        const hint = document.getElementById('phoneHint');
+        if (value.length === 10) {
+            input.classList.add('phone-valid');
+            input.classList.remove('phone-invalid');
+            hint.textContent = '✓ Teléfono de 10 dígitos correcto';
+            hint.style.color = '#27ae60';
+        } else if (value.length > 0) {
+            input.classList.add('phone-invalid');
+            input.classList.remove('phone-valid');
+            hint.textContent = 'Faltan ' + (10 - value.length) + ' dígitos';
+            hint.style.color = '#e74c3c';
+        } else {
+            input.classList.remove('phone-valid', 'phone-invalid');
+            hint.textContent = 'Formato: 10 dígitos';
+            hint.style.color = 'var(--text-light)';
+        }
+    },
+
+    updateTagsPreview: function(value) {
+        const container = document.getElementById('tagsPreview');
+        const tags = value.split(',').map(t => t.trim()).filter(t => t);
+        container.innerHTML = tags.map(t => `<span class="tag">${this.escapeHtml(t)}</span>`).join('');
+    },
+
+    escapeHtml: function(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    saveConfig: function() {
+        const url = document.getElementById('supabaseUrl').value.trim();
+        const key = document.getElementById('supabaseKey').value.trim();
+        if (!url || !key) {
+            this.showNotification('Por favor ingresa ambos datos', 'error');
+            return;
+        }
+        localStorage.setItem('supabaseUrl', url);
+        localStorage.setItem('supabaseKey', key);
+        this.initSupabase(url, key);
+    },
+
+    initSupabase: function(url, key) {
+        try {
+            this.supabaseClient = supabase.createClient(url, key);
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('configSection').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+            document.getElementById('configUrl').textContent = url;
+            this.updateConnectionStatus(true);
+            this.loadPedidos();
+            this.supabaseClient
+                .channel('pedidos')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
+                    this.showSyncIndicator();
+                    this.loadPedidos();
+                })
+                .subscribe();
+            this.showNotification('¡Conectado exitosamente! 🎉');
+        } catch (error) {
+            console.error('Error:', error);
+            this.showNotification('Error de conexión: ' + error.message, 'error');
+            document.getElementById('configSection').style.display = 'block';
+        }
+    },
+
+    updateConnectionStatus: function(connected) {
+        this.isOnline = connected;
+        const status = document.getElementById('connectionStatus');
+        const text = document.getElementById('statusText');
+        if (connected) {
+            status.className = 'connection-status status-connected';
+            text.textContent = 'En línea';
+        } else {
+            status.className = 'connection-status status-disconnected';
+            text.textContent = 'Sin conexión';
+        }
+    },
+
+    clearConfig: function() {
+        if (confirm('¿Seguro que deseas cambiar la cuenta de Supabase?')) {
+            localStorage.removeItem('supabaseUrl');
+            localStorage.removeItem('supabaseKey');
+            location.reload();
+        }
+    },
+
+    loadPedidos: async function() {
+        if (this.isLoading) return;
+        this.isLoading = true;
+        try {
+            const { data, error } = await this.supabaseClient
+                .from('pedidos')
+                .select('*')
+                .order('fecha_entrega', { ascending: true })
+                .order('hora_entrega', { ascending: true, nullsFirst: false });
+            if (error) throw error;
+            this.pedidos = data || [];
+            this.preprocesarPedidosPorFecha();
+            this.updateTodayBadge();
+            this.currentPage = 1;
+            this.filterPedidos();
+            this.renderCalendar();
+            this.updateStats();
+            this.checkNotifications();
+        } catch (error) {
+            console.error('Error cargando pedidos:', error);
+            this.showNotification('Error al consultar agenda', 'error');
+            this.renderError('No se pudieron obtener los datos.');
+        } finally {
+            this.isLoading = false;
+        }
+    },
+
+    preprocesarPedidosPorFecha: function() {
+        this.pedidosPorFecha = {};
+        for (const p of this.pedidos) {
+            if (!this.pedidosPorFecha[p.fecha_entrega]) {
+                this.pedidosPorFecha[p.fecha_entrega] = [];
+            }
+            this.pedidosPorFecha[p.fecha_entrega].push(p);
+        }
+    },
+
+    updateTodayBadge: function() {
+        const todayStr = this.getTodayLocalDate();
+        const count = (this.pedidosPorFecha[todayStr] || []).filter(p => p.estado !== 'cancelado').length;
+        const badge = document.getElementById('todayCountBadge');
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    },
+
+    renderError: function(message) {
+        document.getElementById('pedidosList').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">😕</div>
+                <h3 style="margin-bottom:8px;color:var(--text);">${this.escapeHtml(message)}</h3>
+                <button class="btn btn-primary" onclick="app.loadPedidos()"><span>🔄</span> Reintentar</button>
+            </div>`;
+    },
+
+    checkNotifications: function() {
+        const todayStr = this.getTodayLocalDate();
+        const now = new Date();
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const tomorrowStr = this.getLocalDateString(tomorrow);
+
+        const pedidosHoy = this.pedidos.filter(p => p.fecha_entrega === todayStr && p.estado !== 'entregado' && p.estado !== 'cancelado');
+        const pedidosManana = this.pedidos.filter(p => p.fecha_entrega === tomorrowStr && p.estado !== 'entregado' && p.estado !== 'cancelado');
+
+        let panel = document.getElementById('notificationsPanel');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'notificationsPanel';
+            panel.style.cssText = 'background:var(--surface);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;box-shadow:var(--neu-shadow-flat);border:1px solid var(--border-subtle);display:none;';
+            document.querySelector('.container').insertBefore(panel, document.querySelector('.container').children[1]);
+        }
+        
+        let html = '';
+        if (pedidosHoy.length > 0) {
+            html += `<div style="display:flex;align-items:center;gap:10px;color:var(--text);">
+                <span style="font-size:1.2rem;">🔴</span>
+                <div><strong>Entregas para hoy:</strong> Tienes ${pedidosHoy.length} pedido(s) pendientes para hoy.</div>
+            </div>`;
+        } else if (pedidosManana.length > 0) {
+            html += `<div style="display:flex;align-items:center;gap:10px;color:var(--text);">
+                <span style="font-size:1.2rem;">🟠</span>
+                <div><strong>Para mañana:</strong> ${pedidosManana.length} pedido(s) agendados.</div>
+            </div>`;
+        }
+
+        if (html) {
+            panel.innerHTML = html;
+            panel.style.display = 'block';
+        } else {
+            panel.style.display = 'none';
+        }
+    },
+
+    showSection: function(section, btn) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(section).classList.add('active');
+        if (btn) btn.classList.add('active');
+        if (section === 'calendario') this.renderCalendar();
+    },
+
+    filterToday: function(btn) {
+        const todayStr = this.getTodayLocalDate();
+        this.filterByDate(todayStr, btn);
+    },
+
+    previewImages: function(input) {
+        const preview = document.getElementById('imagePreview');
+        if (input.files && input.files.length > 0) {
+            Array.from(input.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.tempImages.push({ file: file, preview: e.target.result, isNew: true });
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    const safeSrc = this.escapeHtml(e.target.result);
+                    div.innerHTML = `<img src="${safeSrc}" onclick="app.showImageModal('${safeSrc}')">
+                        <button type="button" class="remove-image" onclick="app.removeTempImage(this)">×</button>`;
+                    preview.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        input.value = '';
+    },
+
+    removeTempImage: function(btn) {
+        const index = Array.from(btn.parentElement.parentElement.children).indexOf(btn.parentElement);
+        const removedImage = this.tempImages[index];
+        if (removedImage && !removedImage.isNew && removedImage.url) {
+            this.existingImages = this.existingImages.filter(url => url !== removedImage.url);
+        }
+        this.tempImages.splice(index, 1);
+        btn.parentElement.remove();
+    },
+
+    compressImage: function(file) {
+        return new Promise((resolve) => {
+            if (file.size < 500 * 1024) { resolve(file); return; }
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    let w = img.width, h = img.height;
+                    const maxDim = 1200;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) { h = (h / w) * maxDim; w = maxDim; }
+                        else { w = (w / h) * maxDim; h = maxDim; }
+                    }
+                    canvas.width = w; canvas.height = h;
+                    ctx.drawImage(img, 0, 0, w, h);
+                    canvas.toBlob((blob) => {
+                        const compressed = new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+                        resolve(compressed);
+                    }, 'image/jpeg', 0.8);
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+    },
+
+    uploadImages: async function() {
+        const uploadedUrls = [];
+        for (const img of this.tempImages) {
+            if (img.isNew && img.file) {
+                const compressed = await this.compressImage(img.file);
+                const fileName = `${Date.now()}_${compressed.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                const { data, error } = await this.supabaseClient.storage.from('imagenes-pedidos').upload(fileName, compressed);
+                if (error) { 
+                    console.error('Error subiendo imagen:', error); 
+                    this.showNotification('Error con foto: ' + img.file.name, 'error');
+                    continue; 
+                }
+                const { data: { publicUrl } } = this.supabaseClient.storage.from('imagenes-pedidos').getPublicUrl(fileName);
+                uploadedUrls.push(publicUrl);
+            } else if (img.url && !img.isNew) {
+                uploadedUrls.push(img.url);
+            }
+        }
+        return uploadedUrls;
+    },
+
+    handleSubmit: async function(e) {
+        e.preventDefault();
+        const phoneValue = document.getElementById('telefono').value.replace(/\D/g, '');
+        if (phoneValue.length !== 10) {
+            this.showNotification('El teléfono debe tener 10 dígitos', 'error');
+            document.getElementById('telefono').focus();
+            return false;
+        }
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading-inline"></span> Guardando...';
+        this.showLoadingOverlay('Guardando pedido...');
+        try {
+            const newImageUrls = await this.uploadImages();
+            const allImages = [...new Set([...this.existingImages, ...newImageUrls])];
+            const tagsValue = document.getElementById('tags').value;
+            const tags = tagsValue ? tagsValue.split(',').map(t => t.trim()).filter(t => t) : [];
+            const pedidoData = {
+                cliente: document.getElementById('cliente').value.trim(),
+                telefono: document.getElementById('telefono').value.trim(),
+                tipo_producto: document.getElementById('tipoProducto').value.trim(),
+                fecha_entrega: document.getElementById('fechaEntrega').value,
+                hora_entrega: document.getElementById('horaEntrega').value || null,
+                precio: parseFloat(document.getElementById('precio').value) || 0,
+                anticipo: parseFloat(document.getElementById('anticipo').value) || 0,
+                estado: document.getElementById('estado').value,
+                direccion: document.getElementById('direccion').value.trim() || null,
+                descripcion: document.getElementById('descripcion').value.trim(),
+                notas: document.getElementById('notas').value.trim() || null,
+                imagenes: allImages,
+                tags: tags
+            };
+            let result;
+            if (this.editingId) {
+                result = await this.supabaseClient.from('pedidos').update(pedidoData).eq('id', this.editingId);
+            } else {
+                result = await this.supabaseClient.from('pedidos').insert([pedidoData]);
+            }
+            if (result.error) throw result.error;
+            this.showNotification(this.editingId ? '¡Pedido actualizado! 🎂' : '¡Pedido agendado! 🧁');
+            this.hasUnsavedChanges = false;
+            this.resetForm();
+            await this.loadPedidos();
+        } catch (error) {
+            console.error('Error:', error);
+            this.showNotification('Error al guardar: ' + error.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>💾</span> Guardar Pedido';
+            this.hideLoadingOverlay();
+        }
+        return false;
+    },
+
+    showLoadingOverlay: function(text) {
+        document.querySelector('.loading-text').textContent = text || 'Procesando...';
+        document.getElementById('loadingOverlay').classList.add('active');
+    },
+
+    hideLoadingOverlay: function() {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    },
+
+    resetForm: function() {
+        document.getElementById('pedidoForm').reset();
+        document.getElementById('imagePreview').innerHTML = '';
+        document.getElementById('tagsPreview').innerHTML = '';
+        document.getElementById('phoneHint').textContent = 'Formato: 10 dígitos';
+        document.getElementById('phoneHint').style.color = 'var(--text-light)';
+        document.getElementById('telefono').classList.remove('phone-valid', 'phone-invalid');
+        this.tempImages = [];
+        this.existingImages = [];
+        this.editingId = null;
+        this.hasUnsavedChanges = false;
+        this.setDateMinAttribute();
+        document.getElementById('formTitle').textContent = 'Registrar Nuevo Pedido';
+        document.getElementById('submitBtn').innerHTML = '<span>💾</span> Guardar Pedido';
+    },
+
+    renderPedidoCard: function(p) {
+        const tagsHtml = p.tags && p.tags.length > 0
+            ? `<div class="tags-container">${p.tags.map(t => `<span class="tag">${this.escapeHtml(t)}</span>`).join('')}</div>`
+            : '';
+        const imagesHtml = p.imagenes && p.imagenes.length > 0
+            ? `<div class="pedido-images">${p.imagenes.map(img => {
+                const safeImg = this.escapeHtml(img);
+                return `<img src="${safeImg}" onclick="app.showImageModal('${safeImg}')" loading="lazy">`;
+            }).join('')}</div>`
+            : '';
+        const notasHtml = p.notas
+            ? `<div style="margin:8px 0;font-size:0.85rem;color:var(--text-light);font-style:italic;">📝 ${this.escapeHtml(p.notas)}</div>`
+            : '';
+        const direccionHtml = p.direccion ? `<div style="font-size:0.85rem;margin-top:3px;">📍 ${this.escapeHtml(p.direccion)}</div>` : '';
+
+        const precioVal = parseFloat(p.precio) || 0;
+        const anticipoVal = parseFloat(p.anticipo) || 0;
+        const pendienteVal = precioVal - anticipoVal;
+        const percentPaid = precioVal > 0 ? Math.min(100, Math.round((anticipoVal / precioVal) * 100)) : 0;
+
+        let ticketFinanceHtml = '';
+        if (precioVal > 0) {
+            const isPaid = pendienteVal <= 0;
+            ticketFinanceHtml = `
+            <div class="ticket-finance">
+                <div class="ticket-details">
+                    <div class="ticket-item">Total: <span>$${precioVal.toFixed(2)}</span></div>
+                    <div class="ticket-item">Anticipo: <span>$${anticipoVal.toFixed(2)}</span></div>
+                    <div class="ticket-item">
+                        ${isPaid 
+                            ? '<span style="color:#27ae60;">✓ Pagado</span>' 
+                            : 'Pendiente: <span style="color:#e74c3c;">$' + pendienteVal.toFixed(2) + '</span>'}
+                    </div>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width: ${percentPaid}%;"></div>
+                </div>
+            </div>`;
+        }
+
+        const whatsappLink = `https://wa.me/52${p.telefono.replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(p.cliente)},%20de%20Dulce%20Bocado%20TB.%20Confirmamos%20su%20pedido%20de%20${encodeURIComponent(p.tipo_producto)}%20para%20el%20${encodeURIComponent(p.fecha_entrega)}${p.hora_entrega ? '%20a%20las%20' + encodeURIComponent(p.hora_entrega) : ''}.%20%C2%BFTodo%20correcto%3F`;
+
+        return `
+        <div class="pedido-card estado-${this.escapeHtml(p.estado)}">
+            <div class="pedido-header">
+                <div>
+                    <div class="pedido-title">${this.escapeHtml(p.cliente)}</div>
+                    <div class="pedido-producto">🧁 ${this.escapeHtml(p.tipo_producto)}</div>
+                    ${direccionHtml}
+                </div>
+                <div style="text-align:right;">
+                    <div class="pedido-date">📅 ${this.formatDate(p.fecha_entrega)} ${this.escapeHtml(p.hora_entrega || '')}</div>
+                    <div><span class="status-badge status-${this.escapeHtml(p.estado)}">${this.formatEstado(p.estado)}</span></div>
+                </div>
+            </div>
+            
+            ${ticketFinanceHtml}
+
+            <div style="margin:10px 0;font-size:0.88rem;line-height:1.5;">
+                <strong>Detalles:</strong> ${this.escapeHtml(p.descripcion)}
+            </div>
+            ${notasHtml}
+            ${tagsHtml}
+            ${imagesHtml}
+            <div class="pedido-actions">
+                <button class="btn btn-success" onclick="app.editPedido(${p.id})"><span>✏️</span> Editar</button>
+                <button class="btn btn-primary" onclick="app.viewPedido(${p.id})"><span>👁️</span> Ver</button>
+                <a href="${whatsappLink}" target="_blank" class="btn btn-whatsapp" style="text-decoration:none;"><span>💬</span> WhatsApp</a>
+                <button class="btn" onclick="app.duplicarPedido(${p.id})"><span>📋</span> Copiar</button>
+                <button class="btn btn-danger" onclick="app.confirmDelete(${p.id})"><span>🗑️</span></button>
+            </div>
+        </div>`;
+    },
+
+    renderPedidos: function(pedidosToRender) {
+        const container = document.getElementById('pedidosList');
+        if (!pedidosToRender || pedidosToRender.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🍰</div>
+                    <h3 style="margin-bottom:6px;color:var(--text);">Sin pedidos registrados</h3>
+                    <p style="color:var(--text-light);font-size:0.88rem;">No hay entregas para el filtro seleccionado</p>
+                </div>`;
+            document.getElementById('paginationContainer').style.display = 'none';
+            return;
+        }
+        const totalPages = Math.ceil(pedidosToRender.length / this.itemsPerPage);
+        const start = (this.currentPage - 1) * this.itemsPerPage;
+        const end = start + this.itemsPerPage;
+        const pageItems = pedidosToRender.slice(start, end);
+        container.innerHTML = pageItems.map(p => this.renderPedidoCard(p)).join('');
+        const pagination = document.getElementById('paginationContainer');
+        if (totalPages > 1) {
+            pagination.style.display = 'flex';
+            document.getElementById('paginationInfo').textContent = `Página ${this.currentPage} de ${totalPages}`;
+        } else {
+            pagination.style.display = 'none';
+        }
+    },
+
+    prevPage: function() {
+        if (this.currentPage > 1) { this.currentPage--; this.renderPedidos(this.filteredPedidos); }
+    },
+
+    nextPage: function() {
+        const totalPages = Math.ceil(this.filteredPedidos.length / this.itemsPerPage);
+        if (this.currentPage < totalPages) { this.currentPage++; this.renderPedidos(this.filteredPedidos); }
+    },
+
+    renderCalendar: function() {
+        const year = this.currentMonth.getFullYear();
+        const month = this.currentMonth.getMonth();
+        document.getElementById('monthYear').textContent = new Date(year, month).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+        const calendar = document.getElementById('calendar');
+        calendar.innerHTML = '';
+        const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        for (const day of days) {
+            const div = document.createElement('div');
+            div.className = 'calendar-header';
+            div.textContent = day;
+            calendar.appendChild(div);
+        }
+        for (let i = firstDay - 1; i >= 0; i--) {
+            const div = document.createElement('div');
+            div.className = 'calendar-day other-month';
+            div.innerHTML = `<div class="calendar-day-number">${daysInPrevMonth - i}</div>`;
+            calendar.appendChild(div);
+        }
+        const todayStr = this.getTodayLocalDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const div = document.createElement('div');
+            div.className = 'calendar-day';
+            const dateStr = this.getLocalDateString(new Date(year, month, day));
+            if (todayStr === dateStr) div.classList.add('today');
+            const dayPedidos = this.pedidosPorFecha[dateStr] || [];
+            const pedidosCount = dayPedidos.length;
+            let badgeHtml = '';
+            if (pedidosCount > 0) {
+                let badgeClass = 'badge-low';
+                if (pedidosCount >= 5) badgeClass = 'badge-high';
+                else if (pedidosCount >= 3) badgeClass = 'badge-medium';
+                badgeHtml = `<div class="calendar-badge ${badgeClass}">${pedidosCount}</div>`;
+            }
+            let eventsHtml = '';
+            const showPedidos = dayPedidos.slice(0, 2);
+            for (const p of showPedidos) {
+                eventsHtml += `<div class="calendar-event" onclick="event.stopPropagation();app.viewPedido(${p.id})">${this.escapeHtml(p.cliente)}</div>`;
+            }
+            if (pedidosCount > 2) {
+                eventsHtml += `<div style="font-size:0.65rem;color:var(--text-light);text-align:center;margin-top:2px;">+${pedidosCount - 2} más</div>`;
+            }
+            div.innerHTML = `${badgeHtml}<div class="calendar-day-number">${day}</div>${eventsHtml}`;
+            div.onclick = (function(date) { return function() { app.filterByDate(date); }; })(dateStr);
+            calendar.appendChild(div);
+        }
+        const remainingCells = 42 - (firstDay + daysInMonth);
+        for (let i = 1; i <= remainingCells; i++) {
+            const div = document.createElement('div');
+            div.className = 'calendar-day other-month';
+            div.innerHTML = `<div class="calendar-day-number">${i}</div>`;
+            calendar.appendChild(div);
+        }
+    },
+
+    getLocalDateString: function(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    },
+
+    filterByDate: function(dateStr, btnTarget) {
+        if (this.isFiltering) return;
+        this.isFiltering = true;
+        try {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('lista').classList.add('active');
+            
+            if (btnTarget) {
+                btnTarget.classList.add('active');
+            } else {
+                document.getElementById('btnToday').classList.add('active');
+            }
+            
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterEstado').value = '';
+            document.getElementById('filterFecha').value = dateStr;
+            this.filterPedidos();
+        } catch (e) {
+            console.error('Error en filterByDate:', e);
+        } finally {
+            setTimeout(() => { this.isFiltering = false; }, 400);
+        }
+    },
+
+    changeMonth: function(delta) {
+        this.currentMonth.setMonth(this.currentMonth.getMonth() + delta);
+        this.renderCalendar();
+    },
+
+    filterPedidos: function() {
+        const search = document.getElementById('searchInput').value.toLowerCase().trim();
+        const estado = document.getElementById('filterEstado').value;
+        const fecha = document.getElementById('filterFecha').value;
+        this.filteredPedidos = this.pedidos.filter(p => {
+            const matchSearch = !search ||
+                p.cliente.toLowerCase().includes(search) ||
+                p.tipo_producto.toLowerCase().includes(search) ||
+                (p.tags && p.tags.some(t => t.toLowerCase().includes(search)));
+            const matchEstado = !estado || p.estado === estado;
+            const matchFecha = !fecha || p.fecha_entrega === fecha;
+            return matchSearch && matchEstado && matchFecha;
+        });
+        this.currentPage = 1;
+        this.renderPedidos(this.filteredPedidos);
+    },
+
+    clearFilters: function() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterEstado').value = '';
+        document.getElementById('filterFecha').value = '';
+        this.filteredPedidos = [...this.pedidos];
+        this.currentPage = 1;
+        this.renderPedidos(this.filteredPedidos);
+    },
+
+    viewPedido: function(id) {
+        const p = this.pedidos.find(ped => ped.id === id);
+        if (!p) return;
+        const tagsHtml = p.tags && p.tags.length > 0
+            ? `<div class="tags-container" style="margin:10px 0;">${p.tags.map(t => `<span class="tag">${this.escapeHtml(t)}</span>`).join('')}</div>`
+            : '';
+        const imagesHtml = p.imagenes && p.imagenes.length > 0
+            ? `<div class="form-group"><label>Fotografías de Modelo / Referencia</label><div class="pedido-images" style="margin-top:8px;">${p.imagenes.map(img => {
+                const safeImg = this.escapeHtml(img);
+                return `<img src="${safeImg}" onclick="app.showImageModal('${safeImg}')" style="width:85px;height:85px;" loading="lazy">`;
+            }).join('')}</div></div>`
+            : '';
+        const notasHtml = p.notas
+            ? `<div class="form-group"><label>Notas Especiales</label><div style="padding:12px;background:var(--surface);box-shadow:var(--neu-shadow-pressed);border-radius:12px;color:#e74c3c;font-size:0.88rem;">${this.escapeHtml(p.notas)}</div></div>`
+            : '';
+        const direccionHtml = p.direccion
+            ? `<div class="form-group"><label>Dirección de Entrega</label><div style="padding:12px;background:var(--surface);box-shadow:var(--neu-shadow-pressed);border-radius:12px;font-size:0.88rem;">${this.escapeHtml(p.direccion)}</div></div>`
+            : '';
+
+        const precioVal = parseFloat(p.precio) || 0;
+        const anticipoVal = parseFloat(p.anticipo) || 0;
+        const pendienteVal = precioVal - anticipoVal;
+
+        const whatsappLink = `https://wa.me/52${p.telefono.replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(p.cliente)},%20de%20Dulce%20Bocado%20TB.%20Confirmamos%20su%20pedido%20de%20${encodeURIComponent(p.tipo_producto)}%20para%20el%20${encodeURIComponent(p.fecha_entrega)}${p.hora_entrega ? '%20a%20las%20' + encodeURIComponent(p.hora_entrega) : ''}.%20%C2%BFTodo%20correcto%3F`;
+
+        document.getElementById('modalBody').innerHTML = `
+            <h2 style="margin-bottom:18px;color:var(--text);font-family:'Playfair Display',serif;"><span>🎂</span> Detalle del Pedido</h2>
+            <div class="form-row">
+                <div class="form-group"><label>Cliente</label><div style="padding:12px;background:var(--surface);box-shadow:var(--neu-shadow-pressed);border-radius:12px;font-weight:700;">${this.escapeHtml(p.cliente)}</div></div>
+                <div class="form-group"><label>Teléfono</label><div style="padding:12px;background:var(--surface);box-shadow:var(--neu-shadow-pressed);border-radius:12px;">${this.escapeHtml(p.telefono)}</div></div>
+            </div>
+            <div class="form-group"><label>Producto</label><div style="padding:12px;background:var(--surface);box-shadow:var(--neu-shadow-pressed);border-radius:12px;color:var(--primary);font-weight:700;">${this.escapeHtml(p.tipo_producto)}</div></div>
+            <div class="form-row">
+                <div class="form-group"><label>Fecha y Hora</label><div style="padding:12px;background:var(--surface);box-shadow:var(--neu-shadow-pressed);border-radius:12px;font-weight:700;">${this.formatDate(p.fecha_entrega)} ${this.escapeHtml(p.hora_entrega || '')}</div></div>
+                <div class="form-group"><label>Estado</label><div style="padding:12px;background:var(--surface);box-shadow:var(--neu-shadow-pressed);border-radius:12px;"><span class="status-badge status-${this.escapeHtml(p.estado)}">${this.formatEstado(p.estado)}</span></div></div>
+            </div>
+            ${direccionHtml}
+            
+            <div class="form-row">
+                <div class="form-group"><label>Precio Total</label><div style="padding:12px;background:rgba(39,174,96,0.15);border-radius:12px;font-weight:800;color:#27ae60;">$${precioVal.toFixed(2)}</div></div>
+                <div class="form-group"><label>Anticipo</label><div style="padding:12px;background:rgba(52,152,219,0.15);border-radius:12px;font-weight:700;color:#2980b9;">$${anticipoVal.toFixed(2)}</div></div>
+                <div class="form-group"><label>Pendiente</label><div style="padding:12px;background:rgba(231,76,60,0.15);border-radius:12px;font-weight:800;color:#c0392b;">$${pendienteVal.toFixed(2)}</div></div>
+            </div>
+
+            <div class="form-group"><label>Descripción / Especificaciones</label><div style="padding:12px;background:var(--surface);box-shadow:var(--neu-shadow-pressed);border-radius:12px;white-space:pre-wrap;line-height:1.5;font-size:0.88rem;">${this.escapeHtml(p.descripcion)}</div></div>
+            ${notasHtml}
+            ${tagsHtml}
+            ${imagesHtml}
+            <div style="margin-top:22px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+                <a href="${whatsappLink}" target="_blank" class="btn btn-whatsapp" style="text-decoration:none;"><span>💬</span> WhatsApp</a>
+                <button class="btn" onclick="app.closeModal()">Cerrar</button>
+                <button class="btn btn-success" onclick="app.closeModal();app.editPedido(${p.id})"><span>✏️</span> Editar</button>
+            </div>`;
+        document.getElementById('modal').classList.add('active');
+    },
+
+    editPedido: function(id) {
+        const p = this.pedidos.find(ped => ped.id === id);
+        if (!p) return;
+        this.editingId = id;
+        this.setDateMinAttribute();
+        document.getElementById('cliente').value = p.cliente;
+        document.getElementById('telefono').value = p.telefono;
+        this.formatPhone(document.getElementById('telefono'));
+        document.getElementById('tipoProducto').value = p.tipo_producto;
+        document.getElementById('fechaEntrega').value = p.fecha_entrega;
+        document.getElementById('horaEntrega').value = p.hora_entrega || '';
+        document.getElementById('precio').value = p.precio || '';
+        document.getElementById('anticipo').value = p.anticipo || '';
+        document.getElementById('estado').value = p.estado;
+        document.getElementById('direccion').value = p.direccion || '';
+        document.getElementById('descripcion').value = p.descripcion;
+        document.getElementById('notas').value = p.notas || '';
+        document.getElementById('tags').value = p.tags ? p.tags.join(', ') : '';
+        this.updateTagsPreview(document.getElementById('tags').value);
+        this.tempImages = [];
+        this.existingImages = p.imagenes ? [...p.imagenes] : [];
+        const preview = document.getElementById('imagePreview');
+        preview.innerHTML = '';
+        if (p.imagenes && p.imagenes.length > 0) {
+            for (const img of p.imagenes) {
+                this.tempImages.push({ url: img, preview: img, isNew: false });
+                const div = document.createElement('div');
+                div.className = 'image-preview-item';
+                const safeImg = this.escapeHtml(img);
+                div.innerHTML = `<img src="${safeImg}" onclick="app.showImageModal('${safeImg}')"><button type="button" class="remove-image" onclick="app.removeTempImage(this)">×</button>`;
+                preview.appendChild(div);
+            }
+        }
+        document.getElementById('formTitle').textContent = 'Editar Pedido';
+        document.getElementById('submitBtn').innerHTML = '<span>💾</span> Actualizar Pedido';
+        this.showSection('nuevo', document.querySelectorAll('.nav-btn')[0]);
+        window.scrollTo(0, 0);
+    },
+
+    duplicarPedido: function(id) {
+        const p = this.pedidos.find(ped => ped.id === id);
+        if (!p) return;
+        this.editingId = null;
+        this.setDateMinAttribute();
+        document.getElementById('cliente').value = p.cliente;
+        document.getElementById('telefono').value = p.telefono;
+        this.formatPhone(document.getElementById('telefono'));
+        document.getElementById('tipoProducto').value = p.tipo_producto;
+        document.getElementById('fechaEntrega').value = '';
+        document.getElementById('horaEntrega').value = p.hora_entrega || '';
+        document.getElementById('precio').value = p.precio || '';
+        document.getElementById('anticipo').value = '';
+        document.getElementById('estado').value = 'pendiente';
+        document.getElementById('direccion').value = p.direccion || '';
+        document.getElementById('descripcion').value = p.descripcion;
+        document.getElementById('notas').value = p.notas || '';
+        document.getElementById('tags').value = p.tags ? p.tags.join(', ') : '';
+        this.updateTagsPreview(document.getElementById('tags').value);
+        this.tempImages = [];
+        this.existingImages = [];
+        document.getElementById('imagePreview').innerHTML = '';
+        document.getElementById('formTitle').textContent = 'Duplicar Pedido';
+        document.getElementById('submitBtn').innerHTML = '<span>💾</span> Guardar Pedido';
+        this.showSection('nuevo', document.querySelectorAll('.nav-btn')[0]);
+        this.showNotification('Pedido duplicado. Ajusta la fecha y guarda. 📋');
+        window.scrollTo(0, 0);
+    },
+
+    confirmDelete: async function(id) {
+        if (!confirm('¿Eliminar este pedido permanentemente?')) return;
+        try {
+            const { error } = await this.supabaseClient.from('pedidos').delete().eq('id', id);
+            if (error) throw error;
+            this.showNotification('Pedido eliminado 🗑️');
+            await this.loadPedidos();
+        } catch (error) {
+            this.showNotification('Error al eliminar', 'error');
+        }
+    },
+
+    updateStats: function() {
+        const stats = {
+            total: this.pedidos.length,
+            pendiente: this.pedidos.filter(p => p.estado === 'pendiente').length,
+            horneado: this.pedidos.filter(p => p.estado === 'horneado').length,
+            ensamblado: this.pedidos.filter(p => p.estado === 'ensamblado').length,
+            listo: this.pedidos.filter(p => p.estado === 'listo').length,
+            entregado: this.pedidos.filter(p => p.estado === 'entregado').length,
+            cancelado: this.pedidos.filter(p => p.estado === 'cancelado').length
+        };
+        const container = document.getElementById('statsContainer');
+        const estados = [
+            { key: 'total', label: 'Total', color: 'var(--primary)' },
+            { key: 'pendiente', label: 'Pendientes', color: '#f1c40f' },
+            { key: 'horneado', label: 'Horneados', color: '#e67e22' },
+            { key: 'ensamblado', label: 'Ensamblados', color: '#3498db' },
+            { key: 'listo', label: 'Listos', color: '#9b59b6' },
+            { key: 'entregado', label: 'Entregados', color: '#27ae60' }
+        ];
+        container.innerHTML = estados.map(s => `
+            <div class="stat-card" onclick="app.filterByEstado('${s.key === 'total' ? '' : s.key}')">
+                <div class="stat-number" style="color:${s.color};">${stats[s.key]}</div>
+                <div class="stat-label">${s.label}</div>
+            </div>
+        `).join('');
+    },
+
+    filterByEstado: function(estado) {
+        document.getElementById('filterEstado').value = estado;
+        this.filterPedidos();
+        this.showSection('lista', document.getElementById('btnToday'));
+    },
+
+    exportData: function() {
+        const dataStr = JSON.stringify(this.pedidos, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `dulce_bocado_backup_${this.getTodayLocalDate()}.json`;
+        link.click();
+        this.showNotification('Copia descargada 📥');
+    },
+
+    showSyncIndicator: function() {
+        const indicator = document.getElementById('syncIndicator');
+        indicator.classList.add('show');
+        setTimeout(() => { indicator.classList.remove('show'); }, 2000);
+    },
+
+    formatDate: function(dateStr) {
+        if (!dateStr) return '';
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    },
+
+    formatEstado: function(estado) {
+        const estados = {
+            'pendiente': '🟡 Pendiente', 'horneado': '🟠 Horneado',
+            'ensamblado': '🔵 Ensamblado', 'listo': '🟣 Listo',
+            'entregado': '🟢 Entregado', 'cancelado': '🔴 Cancelado'
+        };
+        return estados[estado] || estado;
+    },
+
+    showNotification: function(message, type) {
+        const notif = document.getElementById('notification');
+        notif.textContent = message;
+        notif.style.background = type === 'error'
+            ? '#e74c3c'
+            : 'var(--primary)';
+        notif.style.display = 'block';
+        setTimeout(() => { notif.style.display = 'none'; }, 3000);
+    },
+
+    closeModal: function() {
+        document.getElementById('modal').classList.remove('active');
+    },
+
+    showImageModal: function(src) {
+        document.getElementById('modalImage').src = src;
+        document.getElementById('imageModal').classList.add('active');
+    },
+
+    closeImageModal: function() {
+        document.getElementById('imageModal').classList.remove('active');
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    app.init();
+});
+</script>
+</body>
+</html>
