@@ -5,37 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Agenda-Dulce Bocado TB</title>
     
-    <!-- Configuración PWA e Instalación para Android / iOS -->
+    <!-- Configuración PWA e Instalación Android / iOS -->
     <meta name="theme-color" content="#f8f3e8">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Agenda DB">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081911.png">
     
-    <!-- Web App Manifest Embebido (Formato Data URI para evitar archivos extras) -->
-    <link rel="manifest" href='data:application/manifest+json,{
-        "name": "Agenda-Dulce Bocado TB",
-        "short_name": "Agenda DB",
-        "start_url": ".",
-        "display": "standalone",
-        "background_color": "#f8f3e8",
-        "theme_color": "#d97762",
-        "orientation": "portrait",
-        "icons": [
-            {
-                "src": "https://cdn-icons-png.flaticon.com/512/3081/3081911.png",
-                "sizes": "192x192",
-                "type": "image/png"
-            },
-            {
-                "src": "https://cdn-icons-png.flaticon.com/512/3081/3081911.png",
-                "sizes": "512x512",
-                "type": "image/png"
-            }
-        ]
-    }'>
+    <!-- Enlace al manifest.json independiente -->
+    <link rel="manifest" href="./manifest.json">
 
     <script>
+    // Registro del Service Worker para PWA en Android
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js')
+                .then(function(reg) {
+                    console.log('Service Worker registrado con éxito:', reg.scope);
+                })
+                .catch(function(err) {
+                    console.error('Error al registrar Service Worker:', err);
+                });
+        });
+    }
+
     (function() {
         window.supabaseLoaded = false;
         window.supabaseLoadError = null;
@@ -534,7 +527,7 @@
             <div class="nav-tabs">
                 <button class="nav-btn active" onclick="app.showSection('nuevo',this)"><span>➕</span><span>Nuevo</span></button>
                 <button class="nav-btn" id="btnToday" onclick="app.filterToday(this)">
-                    <span>☀️️</span><span>Hoy</span>
+                    <span>☀️</span><span>Hoy</span>
                     <span id="todayCountBadge" class="badge-count" style="display:none;">0</span>
                 </button>
                 <button class="nav-btn" onclick="app.showSection('calendario',this)"><span>📅</span><span>Calendario</span></button>
@@ -679,18 +672,6 @@
     <div id="syncIndicator" class="sync-indicator"><span>🔄</span> Actualizando agenda...</div>
 
 <script>
-// Registro automático de Service Worker embebido mediante Blob para validación PWA en Android
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        var swCode = "self.addEventListener('install', function(e) { self.skipWaiting(); }); self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); }); self.addEventListener('fetch', function(e) {});";
-        var blob = new Blob([swCode], { type: 'text/javascript' });
-        var blobUrl = URL.createObjectURL(blob);
-        navigator.serviceWorker.register(blobUrl).catch(function(err) {
-            console.log('SW no registrado (modo archivo local)');
-        });
-    });
-}
-
 window.onerror = function(message, source, lineno, colno, error) {
     console.error('🚨 ERROR GLOBAL:', message, 'en línea', lineno, error);
     return false;
@@ -730,7 +711,7 @@ const app = {
             } else if (window.supabaseLoadError) {
                 document.getElementById('welcomeScreen').style.display = 'flex';
                 document.querySelector('.welcome-subtitle').innerHTML = 
-                    '⚠️️ Sin conexión a la red.<br><small style="color:#e74c3c;">Verifica tus datos móviles o WiFi</small>';
+                    '⚠️ Sin conexión a la red.<br><small style="color:#e74c3c;">Verifica tus datos móviles o WiFi</small>';
             } else {
                 setTimeout(tryInitSupabase, 500);
             }
