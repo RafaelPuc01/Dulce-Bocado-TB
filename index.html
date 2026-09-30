@@ -59,7 +59,6 @@
             --primary-light: #f5cfc7;
             --accent-cream: #fcefdc;
             --accent-gold: #e6a15c;
-            /* Sombras Neumórficas Tono Mantequilla / Crema */
             --neu-shadow-flat: 6px 6px 14px #e0d8c8, -6px -6px 14px #ffffff;
             --neu-shadow-pressed: inset 3px 3px 7px #e0d8c8, inset -3px -3px 7px #ffffff;
             --neu-shadow-hover: 10px 10px 20px #d6ccba, -10px -10px 20px #ffffff;
@@ -328,8 +327,20 @@
         .pedido-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
         .pedido-actions button, .pedido-actions a { padding: 8px 16px; font-size: 0.82rem; }
 
-        /* CALENDAR */
-        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 16px; }
+        /* CALENDARIO CON SCROLL HORIZONTAL EN MÓVIL */
+        .calendar-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 10px;
+        }
+        .calendar { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 8px; 
+            margin-top: 10px; 
+            min-width: 600px; /* Garantiza ancho suficiente para no apretar los días */
+        }
         .calendar-header {
             text-align: center; font-weight: 800; color: var(--primary); padding: 8px 4px;
             text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;
@@ -361,7 +372,14 @@
         .calendar-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
         .month-year { font-family: 'Playfair Display', serif; font-size: 1.45rem; font-weight: 800; color: var(--text); }
 
-        /* TARJETAS DE ESTADÍSTICAS COMPACTAS (MÁS PEQUEÑAS) */
+        .calendar-hint {
+            display: none; font-size: 0.75rem; color: var(--text-light); text-align: center; margin-bottom: 8px; font-weight: 600;
+        }
+        @media (max-width: 768px) {
+            .calendar-hint { display: block; }
+        }
+
+        /* ESTADÍSTICAS COMPACTAS */
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 18px; }
         .stat-card {
             background: var(--surface); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm);
@@ -558,7 +576,6 @@
             </div>
 
             <div id="lista" class="section">
-                <!-- TARJETAS PEQUEÑAS DE ESTADÍSTICAS -->
                 <div class="stats" id="statsContainer"></div>
                 <div class="card">
                     <div class="filters">
@@ -594,7 +611,10 @@
                         <div class="month-year" id="monthYear"></div>
                         <button class="btn" onclick="app.changeMonth(1)"><span>▶</span></button>
                     </div>
-                    <div class="calendar" id="calendar"></div>
+                    <div class="calendar-hint">👈 Desliza horizontalmente para ver todos los días 👉</div>
+                    <div class="calendar-wrapper">
+                        <div class="calendar" id="calendar"></div>
+                    </div>
                 </div>
             </div>
 
@@ -1165,7 +1185,7 @@ const app = {
             ${tagsHtml}
             ${imagesHtml}
             <div class="pedido-actions">
-                <button class="btn btn-success" onclick="app.editPedido(${p.id})"><span>✏️</span> Editar</button>
+                <button class="btn btn-success" onclick="app.editPedido(${p.id})"><span>✏️️</span> Editar</button>
                 <button class="btn btn-primary" onclick="app.viewPedido(${p.id})"><span>👁️</span> Ver</button>
                 <a href="${whatsappLink}" target="_blank" class="btn btn-whatsapp" style="text-decoration:none;"><span>💬</span> WhatsApp</a>
                 <button class="btn" onclick="app.duplicarPedido(${p.id})"><span>📋</span> Copiar</button>
